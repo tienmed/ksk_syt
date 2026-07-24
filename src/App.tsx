@@ -1096,10 +1096,16 @@ export const App: React.FC = () => {
             </div>
           </FormModuleWrapper>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '12px' }}>
-              <div className="syt-group-title" style={{ margin: 0 }}>
-                2. Bảng kê tiền sử bệnh tật cá nhân (Data Grid 22 items):
-              </div>
+          {/* MODULE MOD-04: TIỀN SỬ BẢN THÂN */}
+          <FormModuleWrapper 
+            id="module_personal_history" 
+            code="MOD-04" 
+            title="IV. TIỀN SỬ BẢN THÂN" 
+            icon={<IconFileText />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'doctor', 'nurse']}
+          >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
               <button className="syt-btn syt-btn-success" style={{ padding: '4px 12px', fontSize: '12px' }} onClick={handleSelectAllNo}>
                 <IconCheck /> CHỌN TẤT CẢ KHÔNG
               </button>
@@ -1166,12 +1172,19 @@ export const App: React.FC = () => {
                 />
               </div>
             </div>
+          </FormModuleWrapper>
 
-            {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
-              <div style={{ marginTop: '20px', padding: '14px', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: '6px' }}>
-                <div className="syt-group-title" style={{ color: '#be185d' }}>
-                  Tiền sử Sản phụ khoa (Dành cho nữ giới):
-                </div>
+          {/* MODULE MOD-05: SẢN PHỤ KHOA */}
+          {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
+            <FormModuleWrapper 
+              id="module_obstetrics" 
+              code="MOD-05" 
+              title="V. TIỀN SỬ SẢN PHỤ KHOA" 
+              icon={<IconUser />} 
+              currentUser={currentUser} 
+              allowedRoles={['superadmin', 'doctor']}
+            >
+              <div style={{ padding: '14px', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: '6px' }}>
                 
                 <div className="syt-grid">
                   <div className="syt-field col-3">
@@ -1204,15 +1217,18 @@ export const App: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </FormModuleWrapper>
             )}
-          </div>
 
-          {/* SECTION V: KHÁM THỂ LỰC & THÔNG SỐ SỨC KHỎE */}
-          <div id="sec-theluc" className="syt-section-header">
-            <IconHeartPulse /> V. KHÁM THỂ LỰC & CHỈ SỐ SỨC KHỎE
-          </div>
-
-          <div className="dx-form-group-content">
+          {/* MODULE MOD-06: KHÁM THỂ LỰC */}
+          <FormModuleWrapper 
+            id="module_physical_metrics" 
+            code="MOD-06" 
+            title="VI. KHÁM THỂ LỰC & CHỈ SỐ SỨC KHỎE" 
+            icon={<IconHeartPulse />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'doctor', 'nurse']}
+          >
             <div className="syt-grid">
               <div className="syt-field col-3">
                 <label className="syt-label">Chiều cao (cm)</label>
@@ -1276,8 +1292,18 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* KHÁM PHÂN LOẠI CHUYÊN KHOA LÂM SÀNG (FROM SYT DOM SNIPPET 5) */}
-            <div style={{ marginTop: '24px' }}>
+          </FormModuleWrapper>
+
+          {/* MODULE MOD-07: KHÁM LÂM SÀNG */}
+          <FormModuleWrapper 
+            id="module_clinical_internal" 
+            code="MOD-07" 
+            title="VII. KHÁM LÂM SÀNG" 
+            icon={<IconStethoscope />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'doctor']}
+          >
+            <div style={{ marginTop: '12px' }}>
               <div style={{ color: '#3399ff', fontWeight: 700, fontSize: '16px', textTransform: 'uppercase', marginBottom: '14px', borderBottom: '1px solid #e0e7f3', paddingBottom: '6px' }}>
                 1. NỘI KHOA (Nội khoa tổng quát)
               </div>
@@ -1356,11 +1382,20 @@ export const App: React.FC = () => {
                 onChange={val => handleChange('daLieu', val)}
               />
 
-              {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
-                <>
-                  <div style={{ color: '#3399ff', fontWeight: 700, fontSize: '16px', textTransform: 'uppercase', margin: '24px 0 14px 0', borderBottom: '1px solid #e0e7f3', paddingBottom: '6px' }}>
-                    4. SẢN PHỤ KHOA
-                  </div>
+            </div>
+          </FormModuleWrapper>
+
+          {/* MODULE MOD-08: KHÁM PHỤ KHOA */}
+          {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
+            <FormModuleWrapper 
+              id="module_clinical_obgyn" 
+              code="MOD-08" 
+              title="VIII. KHÁM PHỤ KHOA (DÀNH CHO NỮ)" 
+              icon={<IconStethoscope />} 
+              currentUser={currentUser} 
+              allowedRoles={['superadmin', 'doctor']}
+            >
+              <div style={{ marginTop: '12px' }}>
 
                   <SpecialtyExamBlock 
                     title="Sản khoa" 
@@ -1368,17 +1403,19 @@ export const App: React.FC = () => {
                     data={formData.sanKhoa}
                     onChange={val => handleChange('sanKhoa', val)}
                   />
-                </>
-              )}
-            </div>
-          </div>
+              </div>
+            </FormModuleWrapper>
+          )}
 
-          {/* SECTION VI: KẾT QUẢ CẬN LÂM SÀNG */}
-          <div id="sec-canlamsang" className="syt-section-header">
-            <IconStethoscope /> VI. KẾT QUẢ CẬN LÂM SÀNG & XÉT NGHIỆM
-          </div>
-
-          <div className="dx-form-group-content">
+          {/* MODULE MOD-09: CẬN LÂM SÀNG */}
+          <FormModuleWrapper 
+            id="module_paraclinical" 
+            code="MOD-09" 
+            title="IX. KẾT QUẢ CẬN LÂM SÀNG & XÉT NGHIỆM" 
+            icon={<IconStethoscope />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'doctor']}
+          >
             <b style={{ color: '#3399ff', fontSize: '15px', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>
               1. Khám phân loại sức khỏe để đi học, đi làm / 2. Khám sức khỏe định kỳ
             </b>
@@ -1606,14 +1643,18 @@ export const App: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
+          </FormModuleWrapper>
 
-          {/* SECTION VII: KẾT LUẬN SỨC KHỎE (FROM LATEST HTML DOM) */}
-          <div id="sec-ketluan" className="syt-section-header">
-            <IconUser /> VII. KẾT LUẬN & ĐỀ NGHỊ BÁC SĨ (V. KẾT LUẬN)
-          </div>
-
-          <div className="dx-form-group-content" style={{ background: '#f4f8fc', border: '1px solid #cfe0f0' }}>
+          {/* MODULE MOD-10: KẾT LUẬN */}
+          <FormModuleWrapper 
+            id="module_conclusion" 
+            code="MOD-10" 
+            title="X. KẾT LUẬN & ĐỀ NGHỊ BÁC SĨ" 
+            icon={<IconUser />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'doctor']}
+          >
+            <div style={{ background: '#f4f8fc', border: '1px solid #cfe0f0', borderRadius: '8px', padding: '16px' }}>
             <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#0d47a1', marginBottom: '12px' }}>
               V. KẾT LUẬN PHÂN LOẠI SỨC KHỎE THEO QUY ĐỊNH BỘ Y TẾ
             </div>
@@ -1699,7 +1740,8 @@ export const App: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </FormModuleWrapper>
 
           {/* BOTTOM FORM BUTTONS */}
           <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>

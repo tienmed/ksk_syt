@@ -298,6 +298,13 @@ export const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [customIcdInput, setCustomIcdInput] = useState("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Load saved records from localStorage on mount
   useEffect(() => {
@@ -545,7 +552,7 @@ export const App: React.FC = () => {
   return (
     <div className="syt-app-container">
       {/* TOP BRANDING & ACTION HEADER */}
-      <header className="syt-top-header no-print">
+      <header className={`syt-top-header no-print ${isScrolled ? 'syt-header-scrolled' : ''}`}>
         <div className="syt-branding">
           <div className="syt-logo-badge">
             <IconHeartPulse className="w-8 h-8" />

@@ -529,6 +529,18 @@ export const App: React.FC = () => {
     window.print();
   };
 
+  const handleExportJSON = () => {
+    const payload = buildExportPayload(formData);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", hoso_.json);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    triggerToast("Đã xuất file JSON thành công!");
+  };
+
   const handleReset = () => {
     setFormData(INITIAL_FORM_STATE);
     setValidationErrors([]);
@@ -1754,6 +1766,9 @@ export const App: React.FC = () => {
           <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
             <button className="syt-btn syt-btn-outline" onClick={handleReset}>
               <IconRotateCcw /> Hủy bỏ / Nhập lại
+            </button>
+            <button className="syt-btn syt-btn-info" style={{ padding: '12px 28px', fontSize: '15px', background: '#8b5cf6', borderColor: '#7c3aed', color: '#fff' }} onClick={handleExportJSON}>
+              <IconFileText /> XUẤT JSON (API)
             </button>
             <button className="syt-btn syt-btn-primary" style={{ padding: '12px 28px', fontSize: '15px' }} onClick={handleSaveForm}>
               <IconSave /> LƯU PHIẾU KHÁM SỨC KHỎE

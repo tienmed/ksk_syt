@@ -1,5 +1,31 @@
 export const TYPES_VERSION = '1.0.0';
 
+export type UserRoleType = 'superadmin' | 'doctor' | 'nurse' | 'lab_technician' | 'receptionist';
+
+export type ModulePermissionId =
+  | 'module_admin_info'
+  | 'module_payment'
+  | 'module_family_history'
+  | 'module_personal_history'
+  | 'module_obstetrics'
+  | 'module_physical_metrics'
+  | 'module_clinical_internal'
+  | 'module_clinical_surgical_derma'
+  | 'module_clinical_obgyn'
+  | 'module_paraclinical_blood'
+  | 'module_paraclinical_urine'
+  | 'module_paraclinical_imaging'
+  | 'module_doctor_conclusion';
+
+export interface FormModuleConfig {
+  id: ModulePermissionId;
+  code: string;
+  title: string;
+  category: 'hành chính' | 'tiền sử' | 'lâm sàng' | 'cận lâm sàng' | 'kết luận';
+  allowedRoles: UserRoleType[];
+  iconName: string;
+}
+
 export interface PersonalHistoryRow {
   id: number;
   diseaseName: string;
@@ -13,6 +39,7 @@ export interface GoogleUser {
   email: string;
   picture: string;
   role: string;
+  roleType?: UserRoleType;
   accessToken?: string;
 }
 

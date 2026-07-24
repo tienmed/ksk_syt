@@ -4,6 +4,7 @@ import type { FormHealthRecord, GoogleUser } from './types';
 import {
   DEFAULT_PERSONAL_HISTORY_ROWS,
   DEFAULT_SPECIALTY_EXAM,
+  FORM_MODULE_CATALOG,
   ETHNIC_GROUPS,
   ADMINISTRATIVE_DIVISIONS,
   ICD_POPULAR_TAGS,
@@ -189,6 +190,90 @@ const SpecialtyExamBlock: React.FC<SpecialtyExamBlockProps> = ({ title, icon, da
   </div>
 );
 
+interface FormModuleWrapperProps {
+  id: string;
+  code: string;
+  title: string;
+  icon?: React.ReactNode;
+  currentUser: GoogleUser | null;
+  allowedRoles: string[];
+  children: React.ReactNode;
+}
+
+const FormModuleWrapper: React.FC<FormModuleWrapperProps> = ({
+  id,
+  code,
+  title,
+  icon,
+  currentUser,
+  allowedRoles,
+  children
+}) => {
+  const isSuperadmin = currentUser?.email.toLowerCase() === 'tienmed@gmail.com';
+  const userRole = isSuperadmin ? 'superadmin' : (currentUser?.roleType || 'doctor');
+  const hasPermission = isSuperadmin || allowedRoles.includes(userRole);
+
+  return (
+    <div id={id} className="syt-module-card" style={{ scrollMarginTop: '20px' }}>
+      <div className="syt-module-card-header">
+        <div className="syt-module-card-title">
+          <span className="syt-module-code-badge">{code}</span>
+          {icon}
+          <span>{title}</span>
+        </div>
+
+        <div>
+          {isSuperadmin ? (
+            <span className="syt-module-rbac-badge syt-rbac-superadmin">
+              👑 SUPERADMIN • FULL ACCESS
+            </span>
+          ) : hasPermission ? (
+            <span className="syt-module-rbac-badge syt-rbac-permitted">
+              <IconCheck style={{ width: '12px', height: '12px' }} /> QUYỀN TRUY CẬP ĐÃ MỞ
+            </span>
+          ) : (
+            <span className="syt-module-rbac-badge syt-rbac-locked">
+              🔒 BỊ GIỚI HẠN QUYỀN
+            </span>
+          )}
+        </div>
+      </div>
+
+      {hasPermission ? (
+        children
+      ) : (
+        <div style={{ padding: '20px', textAlign: 'center', background: '#fff5f5', border: '1px dashed #fca5a5', borderRadius: '6px', color: '#991b1b' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+            🔒 Phân quyền Module: {title} ({code})
+          </div>
+          <div style={{ fontSize: '12px', color: '#7f1d1d' }}>
+            Tài khoản hiện tại ({currentUser?.email || 'Chưa đăng nhập'}) không thuộc danh sách vai trò được cấp quyền module này.
+          </div>
+          <div style={{ marginTop: '6px', fontSize: '11px', color: '#b91c1c' }}>
+            💡 Vui lòng đăng nhập với tài khoản Superadmin <b>tienmed@gmail.com</b> để quản trị toàn quyền.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "630155980026-r7laqjbsbpj9l164vqc607cste77jeab.apps.googleusercontent.com";
+
+const decodeGoogleCredentialToken = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('Failed to decode Google JWT token', e);
+    return null;
+  }
+};
+
 export const App: React.FC = () => {
   const [formData, setFormData] = useState<FormHealthRecord>(INITIAL_FORM_STATE);
   const [savedRecords, setSavedRecords] = useState<FormHealthRecord[]>([]);
@@ -226,13 +311,37 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Google Identity Services SDK Script Loader
+  // Google Identity Services (GIS) Official OAuth Initialization
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
+    script.onload = () => {
+      if ((window as any).google?.accounts?.id) {
+        (window as any).google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: (response: any) => {
+            if (response?.credential) {
+              const payload = decodeGoogleCredentialToken(response.credential);
+              if (payload) {
+                const isSuperadmin = payload.email.toLowerCase() === 'tienmed@gmail.com';
+                handleLoginSuccess({
+                  id: payload.sub,
+                  name: payload.name || payload.email.split('@')[0],
+                  email: payload.email,
+                  picture: payload.picture || 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+                  role: isSuperadmin ? 'Superadmin - Quản trị viên Tối cao SYT' : 'Bác sĩ / Cán bộ Y tế',
+                  roleType: isSuperadmin ? 'superadmin' : 'doctor'
+                });
+              }
+            }
+          }
+        });
+      }
+    };
     document.body.appendChild(script);
+
     return () => {
       if (document.body.contains(script)) {
         document.body.removeChild(script);
@@ -524,51 +633,55 @@ export const App: React.FC = () => {
       {/* MAIN SPLIT LAYOUT: SIDEBAR + FORM CONTENT */}
       <div className="syt-main-layout">
         
-        {/* LEFT TREE SIDEBAR NAVIGATION */}
+        {/* LEFT TREE SIDEBAR NAVIGATION - MODULAR RBAC ARCHITECTURE */}
         <aside className="syt-nav-sidebar no-print">
-          <div className="syt-nav-title">Danh mục phiếu khám</div>
-          
-          <div className={`syt-tree-item ${activeSection === 'sec-hanhchinh' ? 'active' : ''}`} onClick={() => scrollToSection('sec-hanhchinh')}>
-            <div className="syt-tree-icon-badge" style={{ background: '#e1f5fe', color: '#0984e3' }}>
-              <IconCard className="w-5 h-5" />
-            </div>
-            <div className="syt-tree-text">Thông tin hành chính</div>
+          <div className="syt-nav-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Danh mục Module ({FORM_MODULE_CATALOG.length})</span>
+            <span style={{ fontSize: '10px', color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>RBAC</span>
           </div>
 
-          <div className={`syt-tree-item ${activeSection === 'sec-chitra' ? 'active' : ''}`} onClick={() => scrollToSection('sec-chitra')}>
-            <div className="syt-tree-icon-badge" style={{ background: '#f0fdf4', color: '#16a34a' }}>
-              <IconCard className="w-5 h-5" />
-            </div>
-            <div className="syt-tree-text">Hình thức chi trả</div>
-          </div>
+          {FORM_MODULE_CATALOG.map(mod => {
+            const isSuperadmin = currentUser?.email.toLowerCase() === 'tienmed@gmail.com';
+            const userRole = isSuperadmin ? 'superadmin' : (currentUser?.roleType || 'doctor');
+            const isPermitted = isSuperadmin || mod.allowedRoles.includes(userRole as any);
 
-          <div className={`syt-tree-item ${activeSection === 'sec-tiensu' ? 'active' : ''}`} onClick={() => scrollToSection('sec-tiensu')}>
-            <div className="syt-tree-icon-badge" style={{ background: '#efedff', color: '#6c5ce7' }}>
-              <IconHistory className="w-5 h-5" />
-            </div>
-            <div className="syt-tree-text">Tiền sử bản thân & gia đình</div>
-          </div>
+            return (
+              <div 
+                key={mod.id} 
+                className={`syt-tree-item ${activeSection === mod.id ? 'active' : ''}`} 
+                onClick={() => scrollToSection(mod.id)}
+              >
+                <div 
+                  className="syt-tree-icon-badge" 
+                  style={{ 
+                    background: mod.category === 'hành chính' ? '#e1f5fe' :
+                                mod.category === 'tiền sử' ? '#efedff' :
+                                mod.category === 'lâm sàng' ? '#fff1f1' :
+                                mod.category === 'cận lâm sàng' ? '#e8f5e9' : '#fff8e1', 
+                    color: mod.category === 'hành chính' ? '#0984e3' :
+                           mod.category === 'tiền sử' ? '#6c5ce7' :
+                           mod.category === 'lâm sàng' ? '#d63031' :
+                           mod.category === 'cận lâm sàng' ? '#2e7d32' : '#f59e0b'
+                  }}
+                >
+                  <IconFileText className="w-4 h-4" />
+                </div>
 
-          <div className={`syt-tree-item ${activeSection === 'sec-theluc' ? 'active' : ''}`} onClick={() => scrollToSection('sec-theluc')}>
-            <div className="syt-tree-icon-badge" style={{ background: '#fff1f1', color: '#d63031' }}>
-              <IconHeartPulse className="w-5 h-5" />
-            </div>
-            <div className="syt-tree-text">Khám lâm sàng & thể lực</div>
-          </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="syt-module-code-badge" style={{ fontSize: '10px', padding: '1px 5px' }}>{mod.code}</span>
+                    <span className="syt-tree-text" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {mod.title}
+                    </span>
+                  </div>
+                </div>
 
-          <div className={`syt-tree-item ${activeSection === 'sec-canlamsang' ? 'active' : ''}`} onClick={() => scrollToSection('sec-canlamsang')}>
-            <div className="syt-tree-icon-badge" style={{ background: '#0080001c', color: 'green' }}>
-              <IconStethoscope className="w-5 h-5" />
-            </div>
-            <div className="syt-tree-text">Khám cận lâm sàng</div>
-          </div>
-
-          <div className={`syt-tree-item ${activeSection === 'sec-ketluan' ? 'active' : ''}`} onClick={() => scrollToSection('sec-ketluan')}>
-            <div className="syt-tree-icon-badge" style={{ background: '#fff1f1', color: '#d63031' }}>
-              <IconUser className="w-5 h-5" />
-            </div>
-            <div className="syt-tree-text">V. Kết luận sức khỏe</div>
-          </div>
+                {!isPermitted && (
+                  <span title="Bị giới hạn quyền đối với vai trò hiện tại" style={{ fontSize: '12px' }}>🔒</span>
+                )}
+              </div>
+            );
+          })}
         </aside>
 
         {/* MAIN FORM CARD */}
@@ -623,12 +736,15 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION I: THÔNG TIN HÀNH CHÍNH */}
-          <div id="sec-hanhchinh" className="syt-section-header">
-            <IconUser /> I. THÔNG TIN HÀNH CHÍNH
-          </div>
-
-          <div className="dx-form-group-content">
+          {/* MODULE MOD-01: THÔNG TIN HÀNH CHÍNH */}
+          <FormModuleWrapper 
+            id="module_admin_info" 
+            code="MOD-01" 
+            title="I. THÔNG TIN HÀNH CHÍNH" 
+            icon={<IconUser />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'doctor', 'nurse', 'receptionist']}
+          >
             <div className="syt-grid">
               <div className="syt-field col-4">
                 <label className="syt-label">
@@ -837,14 +953,17 @@ export const App: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
+          </FormModuleWrapper>
 
-          {/* SECTION II: THÔNG TIN ĐỐI TƯỢNG - CHI TRẢ */}
-          <div id="sec-chitra" className="syt-section-header">
-            <IconCard /> II. THÔNG TIN ĐỐI TƯỢNG - CHI TRẢ
-          </div>
-
-          <div className="dx-form-group-content">
+          {/* MODULE MOD-02: THÔNG TIN ĐỐI TƯỢNG - CHI TRẢ */}
+          <FormModuleWrapper 
+            id="module_payment" 
+            code="MOD-02" 
+            title="II. THÔNG TIN ĐỐI TƯỢNG - CHI TRẢ" 
+            icon={<IconCard />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'receptionist']}
+          >
             <div className="syt-group-title">Hình thức chi trả khám sức khỏe:</div>
             <div className="syt-payment-cards">
               {[
@@ -864,7 +983,7 @@ export const App: React.FC = () => {
               ))}
             </div>
 
-            <div className="syt-grid">
+            <div className="syt-grid" style={{ marginTop: '12px' }}>
               <div className="syt-field col-6">
                 <label className="syt-label">Chi tiết hình thức chi trả:</label>
                 <div className="syt-radio-group">
@@ -893,6 +1012,18 @@ export const App: React.FC = () => {
                   onChange={e => handleChange('nguonKacGhiRo', e.target.value)}
                 />
               </div>
+            </div>
+          </FormModuleWrapper>
+
+          {/* MODULE MOD-03: TIỀN SỬ GIA ĐÌNH & MÃ ICD */}
+          <FormModuleWrapper 
+            id="module_family_history" 
+            code="MOD-03" 
+            title="III. TIỀN SỬ GIA ĐÌNH & MÃ ICD" 
+            icon={<IconFileText />} 
+            currentUser={currentUser} 
+            allowedRoles={['superadmin', 'doctor', 'nurse']}
+          >
             </div>
           </div>
 

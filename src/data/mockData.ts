@@ -1,4 +1,4 @@
-import type { FormHealthRecord, PersonalHistoryRow } from '../types';
+import type { FormHealthRecord, PersonalHistoryRow, FormModuleConfig } from '../types';
 
 export const INITIAL_PERSONAL_HISTORY_DISEASES: string[] = [
   "Bệnh truyền nhiễm (Cúm, Sởi, Quai bị, Thủy đậu, COVID-19, v.v.)",
@@ -38,6 +38,113 @@ export const DEFAULT_SPECIALTY_EXAM = {
   icdFinal: "",
   classification: "Loại I"
 };
+
+export const FORM_MODULE_CATALOG: FormModuleConfig[] = [
+  {
+    id: 'module_admin_info',
+    code: 'MOD-01',
+    title: 'Thông tin hành chính',
+    category: 'hành chính',
+    allowedRoles: ['superadmin', 'doctor', 'nurse', 'receptionist'],
+    iconName: 'IconCard'
+  },
+  {
+    id: 'module_payment',
+    code: 'MOD-02',
+    title: 'Hình thức chi trả & Hợp đồng',
+    category: 'hành chính',
+    allowedRoles: ['superadmin', 'receptionist'],
+    iconName: 'IconCard'
+  },
+  {
+    id: 'module_family_history',
+    code: 'MOD-03',
+    title: 'Tiền sử gia đình & Mã ICD',
+    category: 'tiền sử',
+    allowedRoles: ['superadmin', 'doctor', 'nurse'],
+    iconName: 'IconFileText'
+  },
+  {
+    id: 'module_personal_history',
+    code: 'MOD-04',
+    title: 'Tiền sử bản thân (Data Grid 22 Bệnh)',
+    category: 'tiền sử',
+    allowedRoles: ['superadmin', 'doctor', 'nurse'],
+    iconName: 'IconHistory'
+  },
+  {
+    id: 'module_obstetrics',
+    code: 'MOD-05',
+    title: 'Tiền sử Sản phụ khoa (Dành cho Nữ)',
+    category: 'tiền sử',
+    allowedRoles: ['superadmin', 'doctor'],
+    iconName: 'IconUser'
+  },
+  {
+    id: 'module_physical_metrics',
+    code: 'MOD-06',
+    title: 'Khám thể lực, BMI, Mạch & Huyết áp',
+    category: 'lâm sàng',
+    allowedRoles: ['superadmin', 'doctor', 'nurse'],
+    iconName: 'IconHeartPulse'
+  },
+  {
+    id: 'module_clinical_internal',
+    code: 'MOD-07',
+    title: 'Khám lâm sàng - Nội khoa 8 chuyên khoa',
+    category: 'lâm sàng',
+    allowedRoles: ['superadmin', 'doctor'],
+    iconName: 'IconStethoscope'
+  },
+  {
+    id: 'module_clinical_surgical_derma',
+    code: 'MOD-08',
+    title: 'Khám lâm sàng - Ngoại khoa & Da liễu',
+    category: 'lâm sàng',
+    allowedRoles: ['superadmin', 'doctor'],
+    iconName: 'IconStethoscope'
+  },
+  {
+    id: 'module_clinical_obgyn',
+    code: 'MOD-09',
+    title: 'Khám lâm sàng - Sản phụ khoa',
+    category: 'lâm sàng',
+    allowedRoles: ['superadmin', 'doctor'],
+    iconName: 'IconUser'
+  },
+  {
+    id: 'module_paraclinical_blood',
+    code: 'MOD-10',
+    title: 'Xét nghiệm máu (Huyết học & Sinh hóa)',
+    category: 'cận lâm sàng',
+    allowedRoles: ['superadmin', 'doctor', 'lab_technician'],
+    iconName: 'IconStethoscope'
+  },
+  {
+    id: 'module_paraclinical_urine',
+    code: 'MOD-11',
+    title: 'Xét nghiệm nước tiểu (11 chỉ số)',
+    category: 'cận lâm sàng',
+    allowedRoles: ['superadmin', 'doctor', 'lab_technician'],
+    iconName: 'IconFileText'
+  },
+  {
+    id: 'module_paraclinical_imaging',
+    code: 'MOD-12',
+    title: 'Chẩn đoán hình ảnh X-Quang tim phổi',
+    category: 'cận lâm sàng',
+    allowedRoles: ['superadmin', 'doctor', 'lab_technician'],
+    iconName: 'IconFileText'
+  },
+  {
+    id: 'module_doctor_conclusion',
+    code: 'MOD-13',
+    title: 'V. Kết luận & Phân loại sức khỏe',
+    category: 'kết luận',
+    allowedRoles: ['superadmin', 'doctor'],
+    iconName: 'IconCheck'
+  }
+];
 
 export const ETHNIC_GROUPS = [
   "Kinh", "Tày", "Thái", "Mường", "Khơ-me", "H'Mông", "Nùng", "Hoa", "Dao", "Gia-rai", "Ê-đê", "Ba-na", "Xơ-đăng", "Chăm", "Cơ-ho", "Khác"

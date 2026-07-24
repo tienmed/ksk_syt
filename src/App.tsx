@@ -1024,15 +1024,6 @@ export const App: React.FC = () => {
             currentUser={currentUser} 
             allowedRoles={['superadmin', 'doctor', 'nurse']}
           >
-            </div>
-          </div>
-
-          {/* SECTION III & IV: TIỀN SỬ BẢN THÂN & GIA ĐÌNH */}
-          <div id="sec-tiensu" className="syt-section-header">
-            <IconFileText /> III & IV. TIỀN SỬ BẢN THÂN VÀ GIA ĐÌNH
-          </div>
-
-          <div className="dx-form-group-content">
             <div className="syt-group-title">1. Bệnh, tật gia đình đã hoặc đang mắc (Tick chọn nếu có):</div>
             
             <div className="syt-family-grid">
@@ -1103,6 +1094,7 @@ export const App: React.FC = () => {
                 </div>
               </div>
             </div>
+          </FormModuleWrapper>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '12px' }}>
               <div className="syt-group-title" style={{ margin: 0 }}>

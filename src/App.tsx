@@ -109,6 +109,7 @@ const INITIAL_FORM_STATE: FormHealthRecord = {
 export const App: React.FC = () => {
   const [formData, setFormData] = useState<FormHealthRecord>(INITIAL_FORM_STATE);
   const [savedRecords, setSavedRecords] = useState<FormHealthRecord[]>([]);
+  const [activeSection, setActiveSection] = useState<string>('sec-hanhchinh');
   
   // UI Modals & Notifications
   const [showLookupModal, setShowLookupModal] = useState(false);
@@ -138,6 +139,7 @@ export const App: React.FC = () => {
   };
 
   const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
     const el = document.getElementById(sectionId);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -351,42 +353,42 @@ export const App: React.FC = () => {
         <aside className="syt-nav-sidebar no-print">
           <div className="syt-nav-title">Danh mục phiếu khám</div>
           
-          <div className="syt-tree-item" onClick={() => scrollToSection('sec-hanhchinh')}>
+          <div className={`syt-tree-item ${activeSection === 'sec-hanhchinh' ? 'active' : ''}`} onClick={() => scrollToSection('sec-hanhchinh')}>
             <div className="syt-tree-icon-badge" style={{ background: '#e1f5fe', color: '#0984e3' }}>
               <IconCard className="w-5 h-5" />
             </div>
             <div className="syt-tree-text">Thông tin hành chính</div>
           </div>
 
-          <div className="syt-tree-item" onClick={() => scrollToSection('sec-chitra')}>
+          <div className={`syt-tree-item ${activeSection === 'sec-chitra' ? 'active' : ''}`} onClick={() => scrollToSection('sec-chitra')}>
             <div className="syt-tree-icon-badge" style={{ background: '#f0fdf4', color: '#16a34a' }}>
               <IconCard className="w-5 h-5" />
             </div>
             <div className="syt-tree-text">Hình thức chi trả</div>
           </div>
 
-          <div className="syt-tree-item" onClick={() => scrollToSection('sec-tiensu')}>
+          <div className={`syt-tree-item ${activeSection === 'sec-tiensu' ? 'active' : ''}`} onClick={() => scrollToSection('sec-tiensu')}>
             <div className="syt-tree-icon-badge" style={{ background: '#efedff', color: '#6c5ce7' }}>
               <IconHistory className="w-5 h-5" />
             </div>
             <div className="syt-tree-text">Tiền sử bản thân & gia đình</div>
           </div>
 
-          <div className="syt-tree-item" onClick={() => scrollToSection('sec-theluc')}>
+          <div className={`syt-tree-item ${activeSection === 'sec-theluc' ? 'active' : ''}`} onClick={() => scrollToSection('sec-theluc')}>
             <div className="syt-tree-icon-badge" style={{ background: '#fff1f1', color: '#d63031' }}>
               <IconHeartPulse className="w-5 h-5" />
             </div>
             <div className="syt-tree-text">Khám lâm sàng & thể lực</div>
           </div>
 
-          <div className="syt-tree-item" onClick={() => scrollToSection('sec-canlamsang')}>
+          <div className={`syt-tree-item ${activeSection === 'sec-canlamsang' ? 'active' : ''}`} onClick={() => scrollToSection('sec-canlamsang')}>
             <div className="syt-tree-icon-badge" style={{ background: '#0080001c', color: 'green' }}>
               <IconStethoscope className="w-5 h-5" />
             </div>
             <div className="syt-tree-text">Khám cận lâm sàng</div>
           </div>
 
-          <div className="syt-tree-item" onClick={() => scrollToSection('sec-ketluan')}>
+          <div className={`syt-tree-item ${activeSection === 'sec-ketluan' ? 'active' : ''}`} onClick={() => scrollToSection('sec-ketluan')}>
             <div className="syt-tree-icon-badge" style={{ background: '#fff1f1', color: '#d63031' }}>
               <IconUser className="w-5 h-5" />
             </div>

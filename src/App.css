@@ -208,6 +208,19 @@ body {
 .syt-tree-item:hover {
   transform: translateX(4px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  border-color: #93c5fd;
+}
+
+.syt-tree-item.active {
+  border-color: var(--syt-blue);
+  background: #eff6ff;
+  box-shadow: 0 4px 10px rgba(51, 153, 255, 0.18);
+  transform: translateX(4px);
+}
+
+.syt-tree-item.active .syt-tree-text {
+  color: var(--syt-navy);
+  font-weight: 700;
 }
 
 .syt-tree-icon-badge {

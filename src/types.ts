@@ -1,0 +1,116 @@
+export interface PersonalHistoryRow {
+  id: number;
+  diseaseName: string;
+  hasDisease: 'có' | 'không';
+  doctorAssessment?: string;
+}
+
+export interface FamilyHistoryItem {
+  id: string;
+  name: string;
+  checked: boolean;
+}
+
+export interface FormHealthRecord {
+  id?: string;
+  createdAt?: string;
+
+  // Header & Administrative
+  donViKham: string;
+  ngayKham: string;
+  doiTuong: string;
+  diaDiemKham: string;
+
+  soCCCD: string;
+  hoTen: string;
+  ngaySinh: string;
+  gioiTinh: 'Nam' | 'Nữ';
+  danToc: string;
+  nhomMau: string;
+  rhFactor: string;
+  soBHYT: string;
+  dienThoai: string;
+  noiOHienTai: string;
+  tinhThanh: string;
+  quanHuyen: string;
+  xaPhuong: string;
+  ngheNghiep: string;
+  noiCongTac: string;
+  xaPhuongCongTac: string;
+  lyDoKham: string;
+
+  // Payment
+  hinhThucChiTraKsk: string; // 1, 2, 3, 4
+  hinhThucChiTraChiTiet: string; // Hợp đồng, Khám lẻ, Nguồn hỗ trợ khác
+  nguonKacGhiRo: string;
+
+  // Family History
+  familyDiseases: Record<string, boolean>;
+  icdCodesTag: string[];
+  icdCustomText: string;
+
+  // Personal History
+  personalHistoryRows: PersonalHistoryRow[];
+  dangDieuTriThuoc: string;
+  
+  // Female Obstetric History
+  isFemale: boolean;
+  soLanMangThai: string;
+  soLanSinh: string;
+  soLanSay: string;
+  tuoiBatDauKinh: string;
+  chuKyKinh: string;
+  ngayKinhGanNhat: string;
+  benhPhuKhoa: string;
+
+  // Paraclinical / Lab Tests - Blood Count
+  soLuongHC: string; // M/µL
+  huyetSacTo: string; // g/dL
+  hematocrit: string; // %
+  mcv: string; // fL
+  mch: string; // pg
+  mchc: string; // g/dL
+  rdw: string; // %
+  soLuongBC: string; // K/µL
+  bcTrungTinh: string; // K/µL
+  bcLympho: string; // K/µL
+  bcDonNhan: string; // K/µL
+  bcAiToan: string; // K/µL
+  bcAiKiem: string; // K/µL
+  soLuongTC: string; // K/µL
+
+  // Paraclinical / Lab Tests - Blood Biochemistry
+  duongMau: string; // mmol/L
+  ureMau: string; // mmol/L
+  creatinin: string; // µmol/L
+  asat: string; // U/L
+  alat: string; // U/L
+
+  // Urinalysis
+  tiTrong: string;
+  pH: string;
+  bachCauNT: string;
+  hongCauNT: string;
+  nitritNT: 'Âm Tính' | 'Dương Tính' | '';
+  proteinNT: string;
+  glucoseNT: string;
+  cetonicNT: string;
+  bilirubinNT: string;
+  urobilinogenNT: string;
+  nuocTieuKhac: string;
+
+  // Diagnostic & Other
+  xQuangTimPhoi: string;
+  clsKhacRadio: 'Có' | 'Không' | '';
+  clsKhacChiTiet: string;
+
+  // Physical & Doctor Assessment
+  chieuCao: string;
+  canNang: string;
+  bmi: string;
+  mach: string;
+  huyetAp: string;
+  phanLoaiSK: 'Loại I' | 'Loại II' | 'Loại III' | 'Loại IV' | 'Loại V' | '';
+  ketLuanBacSi: string;
+  tenBacSi: string;
+}

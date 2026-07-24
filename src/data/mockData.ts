@@ -91,23 +91,23 @@ export const FORM_MODULE_CATALOG: FormModuleConfig[] = [
   {
     id: 'module_clinical_internal',
     code: 'MOD-07',
-    title: 'Khám lâm sàng - Nội khoa 8 chuyên khoa',
-    category: 'lâm sàng',
-    allowedRoles: ['superadmin', 'doctor'],
-    iconName: 'IconStethoscope'
-  },
-  {
-    id: 'module_clinical_surgical_derma',
-    code: 'MOD-08',
-    title: 'Khám lâm sàng - Ngoại khoa & Da liễu',
+    title: 'Khám lâm sàng - Nội, Ngoại, Da liễu',
     category: 'lâm sàng',
     allowedRoles: ['superadmin', 'doctor'],
     iconName: 'IconStethoscope'
   },
   {
     id: 'module_clinical_obgyn',
-    code: 'MOD-09',
+    code: 'MOD-08',
     title: 'Khám lâm sàng - Sản phụ khoa',
+    category: 'lâm sàng',
+    allowedRoles: ['superadmin', 'doctor'],
+    iconName: 'IconUser'
+  },
+  {
+    id: 'module_clinical_eye_ent_dental',
+    code: 'MOD-09',
+    title: 'Khám lâm sàng - Mắt, Tai Mũi Họng, RHM',
     category: 'lâm sàng',
     allowedRoles: ['superadmin', 'doctor'],
     iconName: 'IconUser'
@@ -147,7 +147,12 @@ export const FORM_MODULE_CATALOG: FormModuleConfig[] = [
 ];
 
 export const ETHNIC_GROUPS = [
-  "Kinh", "Tày", "Thái", "Mường", "Khơ-me", "H'Mông", "Nùng", "Hoa", "Dao", "Gia-rai", "Ê-đê", "Ba-na", "Xơ-đăng", "Chăm", "Cơ-ho", "Khác"
+  "Kinh", "Tày", "Thái", "Mường", "Khmer", "Hoa", "Nùng", "Mông", "Dao", "GiaRai",
+  "ÊĐê", "BaNa", "SánChay", "Chăm", "CơHo", "XơĐăng", "SánDìu", "Hrê", "RaGlai", "Mnông",
+  "Thổ", "Stiêng", "KhơMú", "Bru-VânKiều", "CơTu", "Giáy", "TàÔi", "Mạ", "GiẻTriêng", "Co",
+  "ChơRo", "XinhMun", "HàNhì", "ChuRu", "Lào", "LaChí", "Kháng", "PhùLá", "LaHủ", "LaHa",
+  "PàThẻn", "Lự", "Ngái", "Chứt", "LôLô", "Mảng", "CờLao", "BốY", "Cống", "SiLa",
+  "PuPéo", "RơMăm", "Brâu", "ƠĐu", "Nước Ngoài"
 ];
 
 export const ADMINISTRATIVE_DIVISIONS: Record<string, Record<string, string[]>> = {
@@ -216,6 +221,8 @@ export const SAMPLE_PATIENT_DATABASE: FormHealthRecord[] = [
     chuKyKinh: "",
     ngayKinhGanNhat: "",
     benhPhuKhoa: "",
+    thaiSanCoKhong: "",
+    thaiSanThuoc: "",
     tuanHoan: { normal: true, icdPreliminary: "", icdFinal: "I10", classification: "Loại I" },
     hoHap: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     tieuHoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
@@ -227,6 +234,7 @@ export const SAMPLE_PATIENT_DATABASE: FormHealthRecord[] = [
     ngoaiKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     daLieu: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     sanKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    phuKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     soLuongHC: "4.85",
     huyetSacTo: "14.2",
     hematocrit: "43.5",
@@ -264,7 +272,9 @@ export const SAMPLE_PATIENT_DATABASE: FormHealthRecord[] = [
     canNang: "68",
     bmi: "23.0",
     mach: "75",
-    huyetAp: "120/80",
+    nhipTho: "18",
+    huyetApTT: "120",
+    huyetApTTr: "80",
     phanLoaiSK: "Loại I",
     ketLuanBacSi: "Sức khỏe tốt, đủ điều kiện làm việc bình thường. Tiếp tục duy trì chế độ sinh hoạt lành mạnh.",
     tenBacSi: "BS. CKI NGUYỄN VĂN BÌNH"
@@ -318,6 +328,7 @@ export const SAMPLE_PATIENT_DATABASE: FormHealthRecord[] = [
     ngoaiKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     daLieu: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     sanKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    phuKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     soLuongHC: "4.20",
     huyetSacTo: "12.8",
     hematocrit: "38.2",
@@ -354,9 +365,11 @@ export const SAMPLE_PATIENT_DATABASE: FormHealthRecord[] = [
     chieuCao: "160",
     canNang: "52",
     bmi: "20.3",
-    mach: "72",
-    huyetAp: "110/70",
-    phanLoaiSK: "Loại I",
+    mach: "80",
+    nhipTho: "20",
+    huyetApTT: "110",
+    huyetApTTr: "70",
+    phanLoaiSK: "Loại II",
     ketLuanBacSi: "Sức khỏe Loại I. Đủ sức khỏe công tác.",
     tenBacSi: "BS. CKI PHẠM VĂN ĐỒNG"
   }

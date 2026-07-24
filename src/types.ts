@@ -26,6 +26,8 @@ export interface FormModuleConfig {
   iconName: string;
 }
 
+export type EmailRBACConfig = Record<string, ModulePermissionId[]>;
+
 export interface PersonalHistoryRow {
   id: number;
   diseaseName: string;
@@ -107,6 +109,8 @@ export interface FormHealthRecord {
   chuKyKinh: string;
   ngayKinhGanNhat: string;
   benhPhuKhoa: string;
+  thaiSanCoKhong: 'Có' | 'Không' | '';
+  thaiSanThuoc: string;
 
   // Clinical Specialty Examinations (From SYT DOM Snippet 5)
   tuanHoan: ClinicalSpecialtyExam;
@@ -120,6 +124,11 @@ export interface FormHealthRecord {
   ngoaiKhoa: ClinicalSpecialtyExam;
   daLieu: ClinicalSpecialtyExam;
   sanKhoa: ClinicalSpecialtyExam;
+  phuKhoa: ClinicalSpecialtyExam;
+  mat: ClinicalSpecialtyExam;
+  taiMuiHong: ClinicalSpecialtyExam;
+  rangHamMat: ClinicalSpecialtyExam;
+  rangStatuses?: Record<number, number>;
 
   // Paraclinical / Lab Tests - Blood Count
   soLuongHC: string; // M/µL
@@ -136,6 +145,25 @@ export interface FormHealthRecord {
   bcAiToan: string; // K/µL
   bcAiKiem: string; // K/µL
   soLuongTC: string; // K/µL
+
+  // Eye Exam Specifics
+  khongKinhPhai: string;
+  khongKinhTrai: string;
+  kinhLoPhai: string;
+  kinhLoTrai: string;
+  coKinhPhai: string;
+  coKinhTrai: string;
+  khucXaPhaiCau: string;
+  khucXaPhaiTru: string;
+  khucXaPhaiTruc: string;
+  khucXaTraiCau: string;
+  khucXaTraiTru: string;
+  khucXaTraiTruc: string;
+  taiTraiNoiThuong: string;
+  taiTraiNoiTham: string;
+  taiPhaiNoiThuong: string;
+  taiPhaiNoiTham: string;
+
 
   // Paraclinical / Lab Tests - Blood Biochemistry
   duongMau: string; // mmol/L
@@ -167,7 +195,9 @@ export interface FormHealthRecord {
   canNang: string;
   bmi: string;
   mach: string;
-  huyetAp: string;
+  nhipTho: string;
+  huyetApTT: string;
+  huyetApTTr: string;
   phanLoaiSK: 'Loại I' | 'Loại II' | 'Loại III' | 'Loại IV' | 'Loại V' | '';
   ketLuanBacSi: string;
   tenBacSi: string;

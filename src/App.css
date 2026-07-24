@@ -66,16 +66,37 @@ body {
 
 /* Header & Action Bar */
 .syt-top-header {
-  background: linear-gradient(135deg, #1b365d 0%, #1e65b9 100%);
-  color: #ffffff;
-  padding: 18px 24px;
-  border-radius: 8px;
-  box-shadow: var(--syt-shadow);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  color: var(--syt-navy);
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+  border: 1px solid var(--syt-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
+  position: sticky;
+  top: 16px;
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.syt-header-scrolled {
+  top: 0;
+  border-radius: 0 0 12px 12px;
+  padding: 8px 20px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.syt-header-scrolled .syt-title-group p {
+  display: none;
+}
+
+.syt-header-scrolled .syt-action-bar {
+  display: none;
 }
 
 .syt-branding {
@@ -85,28 +106,41 @@ body {
 }
 
 .syt-logo-badge {
-  width: 52px;
-  height: 52px;
-  background-color: #ffffff;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--syt-blue), var(--syt-navy));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--syt-navy);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(30, 101, 185, 0.3);
+  transition: all 0.3s ease;
+}
+
+.syt-header-scrolled .syt-logo-badge {
+  width: 36px;
+  height: 36px;
 }
 
 .syt-title-group h1 {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0px;
+  color: var(--syt-navy);
   text-transform: uppercase;
+  transition: font-size 0.3s ease;
+}
+
+.syt-header-scrolled .syt-title-group h1 {
+  font-size: 16px;
 }
 
 .syt-title-group p {
   font-size: 13px;
-  opacity: 0.9;
-  font-weight: 400;
+  color: var(--syt-label);
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 .syt-action-bar {
@@ -114,6 +148,7 @@ body {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  transition: all 0.3s ease;
 }
 
 .syt-btn {
@@ -151,13 +186,14 @@ body {
 }
 
 .syt-btn-secondary {
-  background-color: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: #f1f5f9;
+  color: var(--syt-navy);
+  border: 1px solid #cbd5e1;
 }
 
 .syt-btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: #e2e8f0;
+  border-color: #94a3b8;
 }
 
 .syt-btn-outline {

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import './App.css';
-import type { FormHealthRecord, GoogleUser } from './types';
+import Select from 'react-select';
+import RESIDENCE_DATA from './data/residence.json';
+import OCCUPATIONS_DATA from './data/occupations.json';
 import { buildExportPayload } from './exportHelper';
+import './App.css';
+import logoUrl from './assets/logo.png';
+import type { FormHealthRecord, GoogleUser } from './types';
 import {
   DEFAULT_PERSONAL_HISTORY_ROWS,
   DEFAULT_SPECIALTY_EXAM,
@@ -22,7 +26,7 @@ import {
 const INITIAL_FORM_STATE: FormHealthRecord = {
   donViKham: "BỆNH VIỆN ĐA KHOA TỈNH / TRUNG TÂM Y TẾ SỞ Y TẾ TP.HCM",
   ngayKham: new Date().toISOString().split('T')[0],
-  doiTuong: "Khám sức khỏe định kỳ",
+  doiTuong: "13",
   diaDiemKham: "Phòng khám Sức khỏe Định kỳ - Tầng 2",
 
   soCCCD: "",
@@ -74,8 +78,21 @@ const INITIAL_FORM_STATE: FormHealthRecord = {
   ngoaiKhoa: DEFAULT_SPECIALTY_EXAM,
   daLieu: DEFAULT_SPECIALTY_EXAM,
   sanKhoa: DEFAULT_SPECIALTY_EXAM,
+  phuKhoa: DEFAULT_SPECIALTY_EXAM,
+  mat: DEFAULT_SPECIALTY_EXAM,
+  taiMuiHong: DEFAULT_SPECIALTY_EXAM,
+  rangHamMat: DEFAULT_SPECIALTY_EXAM,
 
   soLuongHC: "",
+    khongKinhPhai: "", khongKinhTrai: "",
+    kinhLoPhai: "", kinhLoTrai: "",
+    coKinhPhai: "", coKinhTrai: "",
+    khucXaPhaiCau: "", khucXaPhaiTru: "", khucXaPhaiTruc: "",
+    khucXaTraiCau: "", khucXaTraiTru: "", khucXaTraiTruc: "",
+  taiTraiNoiThuong: "",
+  taiTraiNoiTham: "",
+  taiPhaiNoiThuong: "",
+  taiPhaiNoiTham: "",
   huyetSacTo: "",
   hematocrit: "",
   mcv: "",
@@ -102,31 +119,6 @@ const INITIAL_FORM_STATE: FormHealthRecord = {
   hongCauNT: "",
   nitritNT: "Âm Tính",
   proteinNT: "",
-  glucoseNT: "",
-  cetonicNT: "",
-  bilirubinNT: "",
-  urobilinogenNT: "",
-  nuocTieuKhac: "",
-
-  xQuangTimPhoi: "",
-  clsKhacRadio: "Không",
-  clsKhacChiTiet: "",
-
-  chieuCao: "",
-  canNang: "",
-  bmi: "",
-  mach: "",
-  huyetAp: "",
-  phanLoaiSK: "Loại I",
-  ketLuanBacSi: "",
-  tenBacSi: "BS. CKI NGUYỄN VĂN AN"
-};
-
-interface SpecialtyExamBlockProps {
-  title: string;
-  icon?: React.ReactNode;
-  data: any;
-  onChange: (updated: any) => void;
 }
 
 const SpecialtyExamBlock: React.FC<SpecialtyExamBlockProps> = ({ title, icon, data, onChange }) => (
@@ -197,7 +189,7 @@ interface FormModuleWrapperProps {
   title: string;
   icon?: React.ReactNode;
   currentUser: GoogleUser | null;
-  allowedRoles: string[];
+  emailPermissions: Record<string, string[]>;
   children: React.ReactNode;
 }
 
@@ -207,12 +199,16 @@ const FormModuleWrapper: React.FC<FormModuleWrapperProps> = ({
   title,
   icon,
   currentUser,
-  allowedRoles,
+  emailPermissions,
   children
 }) => {
-  const isSuperadmin = currentUser?.email.toLowerCase() === 'tienmed@gmail.com';
-  const userRole = isSuperadmin ? 'superadmin' : (currentUser?.roleType || 'doctor');
-  const hasPermission = isSuperadmin || allowedRoles.includes(userRole);
+  const isSuperadmin = currentUser?.email?.toLowerCase() === 'tienmed@gmail.com';
+  const userEmail = currentUser?.email?.toLowerCase();
+  
+  let hasPermission = isSuperadmin;
+  if (!isSuperadmin && userEmail && emailPermissions[userEmail]) {
+    hasPermission = emailPermissions[userEmail].includes(code) || emailPermissions[userEmail].includes(id);
+  }
 
   return (
     <div id={id} className="syt-module-card" style={{ scrollMarginTop: '20px' }}>
@@ -248,7 +244,7 @@ const FormModuleWrapper: React.FC<FormModuleWrapperProps> = ({
             🔒 Phân quyền Module: {title} ({code})
           </div>
           <div style={{ fontSize: '12px', color: '#7f1d1d' }}>
-            Tài khoản hiện tại ({currentUser?.email || 'Chưa đăng nhập'}) không thuộc danh sách vai trò được cấp quyền module này.
+            Tài khoản hiện tại ({currentUser?.email || 'Chưa đăng nhập'}) không được cấp quyền chỉnh sửa module này.
           </div>
           <div style={{ marginTop: '6px', fontSize: '11px', color: '#b91c1c' }}>
             💡 Vui lòng đăng nhập với tài khoản Superadmin <b>tienmed@gmail.com</b> để quản trị toàn quyền.
@@ -275,8 +271,22 @@ const decodeGoogleCredentialToken = (token: string) => {
   }
 };
 
+const reactSelectStyles = {
+  control: (base: any) => ({
+    ...base,
+    borderColor: '#d2d6da',
+    borderRadius: '0.375rem',
+    minHeight: '40px',
+    boxShadow: 'none',
+    '&:hover': {
+      borderColor: '#cb0c9f'
+    }
+  })
+};
+
 export const App: React.FC = () => {
   const [formData, setFormData] = useState<FormHealthRecord>(INITIAL_FORM_STATE);
+  const [selectedTooth, setSelectedTooth] = useState<number | null>(null);
   const [savedRecords, setSavedRecords] = useState<FormHealthRecord[]>([]);
   const [activeSection, setActiveSection] = useState<string>('sec-hanhchinh');
   
@@ -289,9 +299,19 @@ export const App: React.FC = () => {
     return null;
   });
   const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [emailPermissions, setEmailPermissions] = useState<Record<string, string[]>>(() => {
+    const stored = localStorage.getItem('syt_email_permissions');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) { return {}; }
+    }
+    return {};
+  });
 
   // UI Modals & Notifications
   const [showLookupModal, setShowLookupModal] = useState(false);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [newEmailInput, setNewEmailInput] = useState("");
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showScanFaceModal, setShowScanFaceModal] = useState(false);
   const [showFingerprintModal, setShowFingerprintModal] = useState(false);
@@ -299,13 +319,6 @@ export const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [customIcdInput, setCustomIcdInput] = useState("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 30);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Load saved records from localStorage on mount
   useEffect(() => {
@@ -318,6 +331,10 @@ export const App: React.FC = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('syt_email_permissions', JSON.stringify(emailPermissions));
+  }, [emailPermissions]);
 
   // Google Identity Services (GIS) Official OAuth Initialization
   useEffect(() => {
@@ -356,6 +373,20 @@ export const App: React.FC = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (showGoogleModal && (window as any).google?.accounts?.id) {
+      setTimeout(() => {
+        const btnContainer = document.getElementById("google-signin-btn-container");
+        if (btnContainer) {
+          (window as any).google.accounts.id.renderButton(
+            btnContainer,
+            { theme: "outline", size: "large", text: "continue_with", width: 300 }
+          );
+        }
+      }, 100);
+    }
+  }, [showGoogleModal]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -530,25 +561,6 @@ export const App: React.FC = () => {
     window.print();
   };
 
-  const handleExportJSON = () => {
-    try {
-      const payload = buildExportPayload(formData);
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const downloadAnchorNode = document.createElement('a');
-      downloadAnchorNode.href = url;
-      downloadAnchorNode.download = hoso_.json;
-      document.body.appendChild(downloadAnchorNode);
-      downloadAnchorNode.click();
-      document.body.removeChild(downloadAnchorNode);
-      URL.revokeObjectURL(url);
-      triggerToast("Đã xuất file JSON thành công!");
-    } catch (error) {
-      console.error("Lỗi khi tạo file JSON:", error);
-      triggerToast("Lỗi khi xuất file JSON!");
-    }
-  };
-
   const handleReset = () => {
     setFormData(INITIAL_FORM_STATE);
     setValidationErrors([]);
@@ -566,24 +578,32 @@ export const App: React.FC = () => {
     }
   };
 
+
+
   const availableDistricts = Object.keys(ADMINISTRATIVE_DIVISIONS[formData.tinhThanh] || {});
   const availableWards = (ADMINISTRATIVE_DIVISIONS[formData.tinhThanh] && ADMINISTRATIVE_DIVISIONS[formData.tinhThanh][formData.quanHuyen]) || [];
 
   return (
     <div className="syt-app-container">
       {/* TOP BRANDING & ACTION HEADER */}
-      <header className={`syt-top-header no-print ${isScrolled ? 'syt-header-scrolled' : ''}`}>
+      <header className="syt-top-header no-print">
         <div className="syt-branding">
           <div className="syt-logo-badge">
-            <IconHeartPulse className="w-8 h-8" />
+            <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
           </div>
           <div className="syt-title-group">
-            <h1>SỞ Y TẾ TP. HỒ CHÍ MINH</h1>
+            <h1>PHÒNG KHÁM ĐA KHOA TRƯỜNG ĐẠI HỌC Y KHOA PHẠM NGỌC THẠCH</h1>
             <p>Hệ thống Khám sức khỏe định kỳ & Quản lý hồ sơ sức khỏe điện tử (Form Chuẩn SYT)</p>
           </div>
         </div>
 
         <div className="syt-action-bar">
+          {currentUser && currentUser.email.toLowerCase() === 'tienmed@gmail.com' && (
+            <button className="syt-btn" style={{ background: '#f59e0b', borderColor: '#d97706', color: '#fff', padding: '6px 12px', fontSize: '12px', height: 'auto' }} onClick={() => setShowPermissionModal(true)} title="Phân quyền Email">
+              ⚙️ Phân quyền
+            </button>
+          )}
+
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.15)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)' }}>
               <img 
@@ -621,20 +641,10 @@ export const App: React.FC = () => {
             <IconSearch /> Tra cứu CCCD
           </button>
 
-          <button className="syt-btn syt-btn-outline" onClick={handleLoadDemoData} title="Nạp dữ liệu mẫu nhanh">
-            ⚡ Nạp dữ liệu mẫu
-          </button>
+
 
           <button className="syt-btn syt-btn-primary" onClick={handleSaveForm}>
             <IconSave /> Lưu phiếu khám
-          </button>
-
-          <button className="syt-btn syt-btn-success" onClick={handlePrint}>
-            <IconPrinter /> In / Xuất PDF
-          </button>
-
-          <button className="syt-btn syt-btn-secondary" onClick={() => setShowHistoryModal(true)}>
-            <IconHistory /> Lịch sử ({savedRecords.length})
           </button>
 
           <button className="syt-btn syt-btn-outline" onClick={handleReset}>
@@ -668,9 +678,13 @@ export const App: React.FC = () => {
           </div>
 
           {FORM_MODULE_CATALOG.map(mod => {
-            const isSuperadmin = currentUser?.email.toLowerCase() === 'tienmed@gmail.com';
-            const userRole = isSuperadmin ? 'superadmin' : (currentUser?.roleType || 'doctor');
-            const isPermitted = isSuperadmin || mod.allowedRoles.includes(userRole as any);
+            const isSuperadmin = currentUser?.email?.toLowerCase() === 'tienmed@gmail.com';
+            const userEmail = currentUser?.email?.toLowerCase();
+            
+            let isPermitted = isSuperadmin;
+            if (!isSuperadmin && userEmail && emailPermissions[userEmail]) {
+              isPermitted = emailPermissions[userEmail].includes(mod.code) || emailPermissions[userEmail].includes(mod.id);
+            }
 
             return (
               <div 
@@ -714,270 +728,206 @@ export const App: React.FC = () => {
         {/* MAIN FORM CARD */}
         <div className="syt-form-card">
           
-          {/* HEADER INFORMATION & CLINIC UNIT */}
-          <div className="dx-form-group-content">
-            <div className="syt-grid">
-              <div className="syt-field col-6">
-                <label className="syt-label"><IconBuilding /> Đơn vị khám</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  value={formData.donViKham} 
-                  onChange={e => handleChange('donViKham', e.target.value)}
-                />
-              </div>
-              
-              <div className="syt-field col-2">
-                <label className="syt-label"><IconCalendar /> Ngày khám</label>
-                <input 
-                  type="date" 
-                  className="syt-input" 
-                  value={formData.ngayKham} 
-                  onChange={e => handleChange('ngayKham', e.target.value)}
-                />
-              </div>
 
-              <div className="syt-field col-2">
-                <label className="syt-label">Đối tượng</label>
-                <select 
-                  className="syt-input" 
-                  value={formData.doiTuong} 
-                  onChange={e => handleChange('doiTuong', e.target.value)}
-                >
-                  <option value="Khám sức khỏe định kỳ">Khám sức khỏe định kỳ</option>
-                  <option value="Khám đi học / đi làm">Khám đi học / đi làm</option>
-                  <option value="Khám tuyển dụng">Khám tuyển dụng</option>
-                  <option value="Khám sức khỏe người lao động">Khám sức khỏe người lao động</option>
-                </select>
-              </div>
-
-              <div className="syt-field col-2">
-                <label className="syt-label">Địa điểm khám</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  value={formData.diaDiemKham} 
-                  onChange={e => handleChange('diaDiemKham', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
 
           {/* MODULE MOD-01: THÔNG TIN HÀNH CHÍNH */}
           <FormModuleWrapper 
-            id="module_admin_info" 
+            id="sec-hanhchinh" 
             code="MOD-01" 
             title="I. THÔNG TIN HÀNH CHÍNH" 
-            icon={<IconUser />} 
+            icon={<IconUser style={{ width: '16px', height: '16px', color: '#0984e3' }} />} 
             currentUser={currentUser} 
-            allowedRoles={['superadmin', 'doctor', 'nurse', 'receptionist']}
+            emailPermissions={emailPermissions}
           >
-            <div className="syt-grid">
-              <div className="syt-field col-4">
-                <label className="syt-label">
-                  Số CCCD / Mã định danh / Hộ chiếu <span className="syt-required-star">*</span>
-                </label>
-                <div className="syt-input-container">
-                  <input 
-                    type="text" 
-                    className="syt-input" 
-                    placeholder="Nhập số CCCD (12 chữ số)..."
-                    value={formData.soCCCD}
-                    onChange={e => handleChange('soCCCD', e.target.value)}
-                  />
-                  <div className="syt-input-group-append">
-                    <button className="syt-icon-btn" title="Quét vân tay" onClick={() => setShowFingerprintModal(true)}>
-                      <IconFingerprint />
-                    </button>
-                    <button className="syt-icon-btn" title="Quét khuôn mặt" onClick={() => setShowScanFaceModal(true)}>
-                      <IconScanFace />
-                    </button>
+            <div className="syt-form-card" style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconUser style={{ color: '#0984e3' }} />
+                <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>THÔNG TIN HÀNH CHÍNH</h3>
+              </div>
+              
+              <div className="syt-grid">
+                <div className="syt-field col-4">
+                  <label className="syt-label">Ngày khám <span className="syt-required-star">*</span></label>
+                  <input type="datetime-local" className="syt-input" value={formData.ngayKham} onChange={e => handleChange('ngayKham', e.target.value)} />
+                </div>
+                <div className="syt-field col-4">
+                  <label className="syt-label">Đối tượng <span className="syt-required-star">*</span></label>
+                  <select className="syt-input" value={formData.doiTuong} onChange={e => handleChange('doiTuong', e.target.value)}>
+                    <option value="">-- Chọn đối tượng --</option>
+                    <option value="1">Người cao tuổi</option>
+                    <option value="2">Người khuyết tật</option>
+                    <option value="3">Người thuộc hộ nghèo/cận nghèo</option>
+                    <option value="4">Người có công</option>
+                    <option value="5">Người mắc bệnh hiểm nghèo/mãn tính</option>
+                    <option value="6">Người sống tại vùng sâu vùng xa</option>
+                    <option value="7">Người sống tại vùng kinh tế đặc biệt khó khăn</option>
+                    <option value="8">Người sống tại xã đảo, huyện đảo</option>
+                    <option value="9">Người sống tại đảo</option>
+                    <option value="10">Trẻ em trong cơ sở bảo trợ xã hội</option>
+                    <option value="11">Học sinh trong các cơ sở giáo dục</option>
+                    <option value="12">Sinh viên</option>
+                    <option value="13">Người lao động</option>
+                    <option value="14">Người lao động không theo hợp đồng</option>
+                    <option value="15">Người chưa có BHYT</option>
+                    <option value="16">Các đối tượng khác</option>
+                  </select>
+                </div>
+                <div className="syt-field col-4">
+                  <label className="syt-label">Địa điểm khám <span className="syt-required-star">*</span></label>
+                  <select className="syt-input" value={formData.diaDiemKham} onChange={e => handleChange('diaDiemKham', e.target.value)}>
+                    <option value="">-- Chọn địa điểm --</option>
+                    <option value="Tại viện">Tại viện</option>
+                    <option value="Ngoại viện">Ngoại viện</option>
+                  </select>
+                </div>
+
+                <div className="syt-field col-6">
+                  <label className="syt-label">Số CCCD/Mã số định danh/Hộ chiếu <span className="syt-required-star">*</span></label>
+                  <div className="syt-input-container">
+                    <input type="text" className="syt-input" placeholder="Nhập CCCD 12 số" value={formData.soCCCD} onChange={e => handleChange('soCCCD', e.target.value)} />
                   </div>
                 </div>
-              </div>
+                <div className="syt-field col-6">
+                  <label className="syt-label">Họ và tên (viết chữ in hoa) <span className="syt-required-star">*</span></label>
+                  <input type="text" className="syt-input syt-input-uppercase" placeholder="NHẬP HỌ TÊN" value={formData.hoTen} onChange={e => handleChange('hoTen', e.target.value.toUpperCase())} />
+                </div>
 
-              <div className="syt-field col-4">
-                <label className="syt-label">
-                  Họ và tên <span className="syt-required-star">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  className="syt-input syt-input-uppercase" 
-                  placeholder="NHẬP HỌ VÀ TÊN (CHỮ IN HOA)"
-                  value={formData.hoTen}
-                  onChange={e => handleChange('hoTen', e.target.value)}
-                />
-              </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Ngày tháng năm sinh <span className="syt-required-star">*</span></label>
+                  <input type="date" className="syt-input" value={formData.ngaySinh} onChange={e => handleChange('ngaySinh', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Giới tính <span className="syt-required-star">*</span></label>
+                  <div className="syt-radio-group">
+                    <label className="syt-radio-label"><input type="radio" name="gioiTinh" value="Nữ" checked={formData.gioiTinh === 'Nữ'} onChange={() => handleChange('gioiTinh', 'Nữ')} /> Nữ</label>
+                    <label className="syt-radio-label"><input type="radio" name="gioiTinh" value="Nam" checked={formData.gioiTinh === 'Nam'} onChange={() => handleChange('gioiTinh', 'Nam')} /> Nam</label>
+                  </div>
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Dân tộc</label>
+                  <select className="syt-input" value={formData.danToc} onChange={e => handleChange('danToc', e.target.value)}>
+                    <option value="">-- Chọn dân tộc --</option>
+                    {ETHNIC_GROUPS.map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Nhóm máu (nếu có)</label>
+                  <select className="syt-input" value={formData.nhomMau} onChange={e => handleChange('nhomMau', e.target.value)}>
+                    <option value="">-- Chọn --</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="O">O</option>
+                    <option value="AB">AB</option>
+                  </select>
+                </div>
 
-              <div className="syt-field col-2">
-                <label className="syt-label">
-                  Ngày sinh <span className="syt-required-star">*</span>
-                </label>
-                <input 
-                  type="date" 
-                  className="syt-input" 
-                  value={formData.ngaySinh}
-                  onChange={e => handleChange('ngaySinh', e.target.value)}
-                />
-              </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Yếu tố nhóm máu</label>
+                  <select className="syt-input" value={formData.rhFactor} onChange={e => handleChange('rhFactor', e.target.value)}>
+                    <option value="">-- Chọn --</option>
+                    <option value="Rh+">Rh+</option>
+                    <option value="Rh-">Rh-</option>
+                  </select>
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Số thẻ Bảo Hiểm Y Tế</label>
+                  <input type="text" className="syt-input" value={formData.soBHYT} onChange={e => handleChange('soBHYT', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Điện thoại di động <span className="syt-required-star">*</span></label>
+                  <input type="text" className="syt-input" value={formData.dienThoai} onChange={e => handleChange('dienThoai', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Nơi ở hiện tại <span className="syt-required-star">*</span></label>
+                  <input type="text" className="syt-input" value={formData.noiOHienTai} onChange={e => handleChange('noiOHienTai', e.target.value)} />
+                </div>
 
-              <div className="syt-field col-2">
-                <label className="syt-label">Tuổi (tự động)</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  readOnly 
-                  value={`${calculateAge(formData.ngaySinh)} tuổi`}
-                />
-              </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Thành phố/Tỉnh <span className="syt-required-star">*</span></label>
+                  <Select
+                    styles={reactSelectStyles}
+                    options={Object.keys(RESIDENCE_DATA).map(p => ({ value: p, label: p }))}
+                    value={formData.tinhThanh ? { value: formData.tinhThanh, label: formData.tinhThanh } : null}
+                    onChange={(option: any) => {
+                      handleChange('tinhThanh', option ? option.value : '');
+                      handleChange('xaPhuong', '');
+                    }}
+                    placeholder="-- Chọn Tỉnh/TP --"
+                    isClearable
+                    isSearchable
+                  />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Xã/Phường <span className="syt-required-star">*</span></label>
+                  <Select
+                    styles={reactSelectStyles}
+                    options={(RESIDENCE_DATA[formData.tinhThanh as keyof typeof RESIDENCE_DATA] || []).map((w: string) => ({ value: w, label: w }))}
+                    value={formData.xaPhuong ? { value: formData.xaPhuong, label: formData.xaPhuong } : null}
+                    onChange={(option: any) => handleChange('xaPhuong', option ? option.value : '')}
+                    placeholder="-- Chọn Xã/Phường --"
+                    isClearable
+                    isSearchable
+                  />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Nghề nghiệp <span className="syt-required-star">*</span></label>
+                  <Select
+                    styles={reactSelectStyles}
+                    options={OCCUPATIONS_DATA.map((o: string) => ({ value: o, label: o }))}
+                    value={formData.ngheNghiep ? { value: formData.ngheNghiep, label: formData.ngheNghiep } : null}
+                    onChange={(option: any) => handleChange('ngheNghiep', option ? option.value : '')}
+                    placeholder="-- Chọn nghề nghiệp --"
+                    isClearable
+                    isSearchable
+                  />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Nơi công tác, học tập</label>
+                  <input type="text" className="syt-input" placeholder="Nhập tên cơ quan/trường học" value={formData.noiCongTac} onChange={e => handleChange('noiCongTac', e.target.value)} />
+                </div>
 
-              <div className="syt-field col-3">
-                <label className="syt-label">Giới tính</label>
-                <div className="syt-radio-group">
-                  <label className="syt-radio-label">
-                    <input 
-                      type="radio" 
-                      name="gioiTinh" 
-                      value="Nam" 
-                      checked={formData.gioiTinh === 'Nam'}
-                      onChange={() => handleChange('gioiTinh', 'Nam')}
-                    /> Nam
-                  </label>
-                  <label className="syt-radio-label">
-                    <input 
-                      type="radio" 
-                      name="gioiTinh" 
-                      value="Nữ" 
-                      checked={formData.gioiTinh === 'Nữ'}
-                      onChange={() => handleChange('gioiTinh', 'Nữ')}
-                    /> Nữ
-                  </label>
+                <div className="syt-field col-4">
+                  <label className="syt-label">Xã/Phường công tác</label>
+                  <input type="text" className="syt-input" placeholder="Nhập xã/phường công tác" value={formData.xaPhuongCongTac} onChange={e => handleChange('xaPhuongCongTac', e.target.value)} />
+                </div>
+                <div className="syt-field col-8"></div>
+
+                <div className="syt-field col-12">
+                  <label className="syt-label">Lý do khám sức khỏe</label>
+                  <textarea className="syt-input" rows={2} value={formData.lyDoKham} onChange={e => handleChange('lyDoKham', e.target.value)}></textarea>
                 </div>
               </div>
 
-              <div className="syt-field col-2">
-                <label className="syt-label">Dân tộc</label>
-                <select className="syt-input" value={formData.danToc} onChange={e => handleChange('danToc', e.target.value)}>
-                  {ETHNIC_GROUPS.map(e => <option key={e} value={e}>{e}</option>)}
-                </select>
+              <div style={{ marginTop: '32px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconBriefcase style={{ color: '#0984e3' }} />
+                <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>THÔNG TIN ĐỐI TƯỢNG - CHI TRẢ</h3>
               </div>
+              
+              <div className="syt-grid">
+                <div className="syt-field col-6">
+                  <label className="syt-label">Hình thức chi trả khám sức khỏe <span className="syt-required-star">*</span></label>
+                  <div className="syt-radio-group" style={{ flexDirection: 'column', gap: '8px' }}>
+                    <label className="syt-radio-label"><input type="radio" name="htct" value="Ngân sách thành phố hỗ trợ" checked={formData.hinhThucChiTraKsk === 'Ngân sách thành phố hỗ trợ'} onChange={e => handleChange('hinhThucChiTraKsk', e.target.value)} /> Ngân sách thành phố hỗ trợ</label>
+                    <label className="syt-radio-label"><input type="radio" name="htct" value="Người sử dụng lao động chi trả" checked={formData.hinhThucChiTraKsk === 'Người sử dụng lao động chi trả'} onChange={e => handleChange('hinhThucChiTraKsk', e.target.value)} /> Người sử dụng lao động chi trả</label>
+                    <label className="syt-radio-label"><input type="radio" name="htct" value="Người dân tự chi trả" checked={formData.hinhThucChiTraKsk === 'Người dân tự chi trả'} onChange={e => handleChange('hinhThucChiTraKsk', e.target.value)} /> Người dân tự chi trả</label>
+                    <label className="syt-radio-label"><input type="radio" name="htct" value="Nguồn khác" checked={formData.hinhThucChiTraKsk === 'Nguồn khác'} onChange={e => handleChange('hinhThucChiTraKsk', e.target.value)} /> Nguồn khác</label>
+                  </div>
+                </div>
 
-              <div className="syt-field col-2">
-                <label className="syt-label">Nhóm máu</label>
-                <select className="syt-input" value={formData.nhomMau} onChange={e => handleChange('nhomMau', e.target.value)}>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="AB">AB</option>
-                  <option value="O">O</option>
-                  <option value="Chưa xác định">Chưa xác định</option>
-                </select>
-              </div>
+                <div className="syt-field col-6">
+                  <label className="syt-label">Hình thức chi trả <span className="syt-required-star">*</span></label>
+                  <div className="syt-radio-group">
+                    <label className="syt-radio-label"><input type="radio" name="htct_ct" value="Khám Theo Hợp Đồng" checked={formData.hinhThucChiTraChiTiet === 'Khám Theo Hợp Đồng'} onChange={e => handleChange('hinhThucChiTraChiTiet', e.target.value)} /> Khám Theo Hợp Đồng</label>
+                    <label className="syt-radio-label"><input type="radio" name="htct_ct" value="Tự Thực hiện" checked={formData.hinhThucChiTraChiTiet === 'Tự Thực hiện'} onChange={e => handleChange('hinhThucChiTraChiTiet', e.target.value)} /> Tự Thực hiện</label>
+                  </div>
+                </div>
 
-              <div className="syt-field col-2">
-                <label className="syt-label">Yếu tố Rh</label>
-                <select className="syt-input" value={formData.rhFactor} onChange={e => handleChange('rhFactor', e.target.value)}>
-                  <option value="Rh+">Rh+</option>
-                  <option value="Rh-">Rh-</option>
-                  <option value="Chưa xác định">Chưa xác định</option>
-                </select>
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Số thẻ BHYT</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  placeholder="Mã thẻ BHYT 15 ký tự"
-                  value={formData.soBHYT}
-                  onChange={e => handleChange('soBHYT', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">
-                  Điện thoại di động <span className="syt-required-star">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  placeholder="090x xxx xxx"
-                  value={formData.dienThoai}
-                  onChange={e => handleChange('dienThoai', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-9">
-                <label className="syt-label"><IconMapPin /> Nơi ở hiện tại (Số nhà, tên đường)</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  placeholder="Số nhà, tên đường, khu phố/thôn..."
-                  value={formData.noiOHienTai}
-                  onChange={e => handleChange('noiOHienTai', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Thành phố / Tỉnh</label>
-                <select 
-                  className="syt-input" 
-                  value={formData.tinhThanh}
-                  onChange={e => handleChange('tinhThanh', e.target.value)}
-                >
-                  {Object.keys(ADMINISTRATIVE_DIVISIONS).map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Quận / Huyện</label>
-                <select 
-                  className="syt-input" 
-                  value={formData.quanHuyen}
-                  onChange={e => handleChange('quanHuyen', e.target.value)}
-                >
-                  {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Xã / Phường</label>
-                <select 
-                  className="syt-input" 
-                  value={formData.xaPhuong}
-                  onChange={e => handleChange('xaPhuong', e.target.value)}
-                >
-                  {availableWards.map(w => <option key={w} value={w}>{w}</option>)}
-                </select>
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label"><IconBriefcase /> Nghề nghiệp</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  value={formData.ngheNghiep}
-                  onChange={e => handleChange('ngheNghiep', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Nơi công tác / học tập</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  value={formData.noiCongTac}
-                  onChange={e => handleChange('noiCongTac', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-6">
-                <label className="syt-label">Lý do khám</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  value={formData.lyDoKham}
-                  onChange={e => handleChange('lyDoKham', e.target.value)}
-                />
+                {formData.hinhThucChiTraKsk === 'Nguồn khác' && (
+                  <div className="syt-field col-12">
+                    <label className="syt-label">Nguồn khác (Ghi rõ)</label>
+                    <input type="text" className="syt-input" value={formData.nguonKacGhiRo || ''} onChange={e => handleChange('nguonKacGhiRo', e.target.value)} />
+                  </div>
+                )}
               </div>
             </div>
           </FormModuleWrapper>
@@ -989,7 +939,7 @@ export const App: React.FC = () => {
             title="II. THÔNG TIN ĐỐI TƯỢNG - CHI TRẢ" 
             icon={<IconCard />} 
             currentUser={currentUser} 
-            allowedRoles={['superadmin', 'receptionist']}
+            emailPermissions={emailPermissions}
           >
             <div className="syt-group-title">Hình thức chi trả khám sức khỏe:</div>
             <div className="syt-payment-cards">
@@ -1049,7 +999,7 @@ export const App: React.FC = () => {
             title="III. TIỀN SỬ GIA ĐÌNH & MÃ ICD" 
             icon={<IconFileText />} 
             currentUser={currentUser} 
-            allowedRoles={['superadmin', 'doctor', 'nurse']}
+            emailPermissions={emailPermissions}
           >
             <div className="syt-group-title">1. Bệnh, tật gia đình đã hoặc đang mắc (Tick chọn nếu có):</div>
             
@@ -1127,12 +1077,20 @@ export const App: React.FC = () => {
           <FormModuleWrapper 
             id="module_personal_history" 
             code="MOD-04" 
-            title="IV. TIỀN SỬ BẢN THÂN" 
-            icon={<IconFileText />} 
+            title="II. TIỀN SỬ BẢN THÂN" 
+            icon={<IconHistory style={{ width: '16px', height: '16px', color: '#0984e3' }} />} 
             currentUser={currentUser} 
-            allowedRoles={['superadmin', 'doctor', 'nurse']}
+            emailPermissions={emailPermissions}
           >
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+            <div className="syt-form-card" style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconHistory style={{ color: '#0984e3' }} />
+                <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>TIỀN SỬ BẢN THÂN</h3>
+              </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '12px' }}>
+              <div className="syt-group-title" style={{ margin: 0 }}>
+                2. Bảng kê tiền sử bệnh tật cá nhân (Data Grid 22 items):
+              </div>
               <button className="syt-btn syt-btn-success" style={{ padding: '4px 12px', fontSize: '12px' }} onClick={handleSelectAllNo}>
                 <IconCheck /> CHỌN TẤT CẢ KHÔNG
               </button>
@@ -1199,250 +1157,621 @@ export const App: React.FC = () => {
                 />
               </div>
             </div>
+
+            </div>
           </FormModuleWrapper>
 
-          {/* MODULE MOD-05: SẢN PHỤ KHOA */}
+          {/* MODULE MOD-05: TIỀN SỬ SẢN PHỤ KHOA */}
           {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
             <FormModuleWrapper 
               id="module_obstetrics" 
               code="MOD-05" 
-              title="V. TIỀN SỬ SẢN PHỤ KHOA" 
-              icon={<IconUser />} 
+              title="Tiền sử Sản phụ khoa (Dành cho Nữ)" 
+              icon={<IconUser style={{ width: '16px', height: '16px', color: '#0984e3' }} />} 
               currentUser={currentUser} 
-              allowedRoles={['superadmin', 'doctor']}
+              emailPermissions={emailPermissions}
             >
-              <div style={{ padding: '14px', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: '6px' }}>
-                
+              <div className="syt-form-card" style={{ padding: '24px' }}>
+                <div style={{ marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <IconUser style={{ color: '#0984e3' }} />
+                  <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>TIỀN SỬ THAI SẢN (ĐỐI VỚI PHỤ NỮ)</h3>
+                </div>
+
                 <div className="syt-grid">
-                  <div className="syt-field col-3">
-                    <label className="syt-label">Số lần mang thai (Para)</label>
-                    <input type="number" className="syt-input" value={formData.soLanMangThai} onChange={e => handleChange('soLanMangThai', e.target.value)} />
+                  <div className="syt-field col-12">
+                    <div className="syt-radio-group" style={{ gap: '20px' }}>
+                      <label className="syt-radio-label">
+                        <input type="radio" name="thaiSanCoKhong" value="Có" checked={formData.thaiSanCoKhong === 'Có'} onChange={e => handleChange('thaiSanCoKhong', e.target.value)} /> Có
+                      </label>
+                      <label className="syt-radio-label">
+                        <input type="radio" name="thaiSanCoKhong" value="Không" checked={formData.thaiSanCoKhong === 'Không'} onChange={e => handleChange('thaiSanCoKhong', e.target.value)} /> Không
+                      </label>
+                    </div>
                   </div>
-                  <div className="syt-field col-3">
-                    <label className="syt-label">Số lần sinh</label>
-                    <input type="number" className="syt-input" value={formData.soLanSinh} onChange={e => handleChange('soLanSinh', e.target.value)} />
-                  </div>
-                  <div className="syt-field col-3">
-                    <label className="syt-label">Số lần sảy / nạo hút</label>
-                    <input type="number" className="syt-input" value={formData.soLanSay} onChange={e => handleChange('soLanSay', e.target.value)} />
-                  </div>
-                  <div className="syt-field col-3">
-                    <label className="syt-label">Tuổi bắt đầu có kinh</label>
-                    <input type="text" className="syt-input" placeholder="VD: 13 tuổi" value={formData.tuoiBatDauKinh} onChange={e => handleChange('tuoiBatDauKinh', e.target.value)} />
-                  </div>
-                  <div className="syt-field col-4">
-                    <label className="syt-label">Chu kỳ kinh nguyệt</label>
-                    <input type="text" className="syt-input" placeholder="VD: 28-30 ngày, đều" value={formData.chuKyKinh} onChange={e => handleChange('chuKyKinh', e.target.value)} />
-                  </div>
-                  <div className="syt-field col-4">
-                    <label className="syt-label">Ngày thấy kinh gần nhất</label>
-                    <input type="date" className="syt-input" value={formData.ngayKinhGanNhat} onChange={e => handleChange('ngayKinhGanNhat', e.target.value)} />
-                  </div>
-                  <div className="syt-field col-4">
-                    <label className="syt-label">Bệnh phụ khoa đã/đang điều trị</label>
-                    <input type="text" className="syt-input" value={formData.benhPhuKhoa} onChange={e => handleChange('benhPhuKhoa', e.target.value)} />
-                  </div>
+
+                  {formData.thaiSanCoKhong === 'Có' && (
+                    <div className="syt-field col-12">
+                      <label className="syt-label" style={{ fontWeight: 500 }}>Nếu có, xin hãy liệt kê các thuốc đang dùng và liều lượng</label>
+                      <input type="text" className="syt-input" value={formData.thaiSanThuoc} onChange={e => handleChange('thaiSanThuoc', e.target.value)} />
+                    </div>
+                  )}
                 </div>
-              </div>
-            </FormModuleWrapper>
-            )}
-
-          {/* MODULE MOD-06: KHÁM THỂ LỰC */}
-          <FormModuleWrapper 
-            id="module_physical_metrics" 
-            code="MOD-06" 
-            title="VI. KHÁM THỂ LỰC & CHỈ SỐ SỨC KHỎE" 
-            icon={<IconHeartPulse />} 
-            currentUser={currentUser} 
-            allowedRoles={['superadmin', 'doctor', 'nurse']}
-          >
-            <div className="syt-grid">
-              <div className="syt-field col-3">
-                <label className="syt-label">Chiều cao (cm)</label>
-                <input 
-                  type="number" 
-                  className="syt-input" 
-                  placeholder="VD: 170"
-                  value={formData.chieuCao} 
-                  onChange={e => handleChange('chieuCao', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Cân nặng (kg)</label>
-                <input 
-                  type="number" 
-                  className="syt-input" 
-                  placeholder="VD: 65"
-                  value={formData.canNang} 
-                  onChange={e => handleChange('canNang', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">BMI (Tự động tính)</label>
-                <div className="syt-input-container">
-                  <input 
-                    type="text" 
-                    className="syt-input" 
-                    readOnly 
-                    value={formData.bmi} 
-                  />
-                </div>
-                {getBmiCategory(formData.bmi) && (
-                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: getBmiCategory(formData.bmi)!.color, marginTop: '2px' }}>
-                    {getBmiCategory(formData.bmi)!.text}
-                  </span>
-                )}
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Mạch (lần/phút)</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  placeholder="VD: 75"
-                  value={formData.mach} 
-                  onChange={e => handleChange('mach', e.target.value)}
-                />
-              </div>
-
-              <div className="syt-field col-3">
-                <label className="syt-label">Huyết áp (mmHg)</label>
-                <input 
-                  type="text" 
-                  className="syt-input" 
-                  placeholder="VD: 120/80"
-                  value={formData.huyetAp} 
-                  onChange={e => handleChange('huyetAp', e.target.value)}
-                />
-              </div>
-            </div>
-
-          </FormModuleWrapper>
-
-          {/* MODULE MOD-07: KHÁM LÂM SÀNG */}
-          <FormModuleWrapper 
-            id="module_clinical_internal" 
-            code="MOD-07" 
-            title="VII. KHÁM LÂM SÀNG" 
-            icon={<IconStethoscope />} 
-            currentUser={currentUser} 
-            allowedRoles={['superadmin', 'doctor']}
-          >
-            <div style={{ marginTop: '12px' }}>
-              <div style={{ color: '#3399ff', fontWeight: 700, fontSize: '16px', textTransform: 'uppercase', marginBottom: '14px', borderBottom: '1px solid #e0e7f3', paddingBottom: '6px' }}>
-                1. NỘI KHOA (Nội khoa tổng quát)
-              </div>
-
-              <SpecialtyExamBlock 
-                title="Tuần hoàn" 
-                icon={<IconHeartPulse />}
-                data={formData.tuanHoan}
-                onChange={val => handleChange('tuanHoan', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Hô hấp" 
-                icon={<IconStethoscope />}
-                data={formData.hoHap}
-                onChange={val => handleChange('hoHap', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Tiêu hóa" 
-                icon={<IconBriefcase />}
-                data={formData.tieuHoa}
-                onChange={val => handleChange('tieuHoa', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Thận - Tiết niệu" 
-                icon={<IconFileText />}
-                data={formData.thanTietNieu}
-                onChange={val => handleChange('thanTietNieu', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Nội tiết" 
-                icon={<IconUser />}
-                data={formData.noiTiet}
-                onChange={val => handleChange('noiTiet', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Cơ - xương - khớp" 
-                icon={<IconHeartPulse />}
-                data={formData.coXuongKhop}
-                onChange={val => handleChange('coXuongKhop', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Thần kinh" 
-                icon={<IconUser />}
-                data={formData.thanKinh}
-                onChange={val => handleChange('thanKinh', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Tâm thần" 
-                icon={<IconUser />}
-                data={formData.tamThan}
-                onChange={val => handleChange('tamThan', val)}
-              />
-
-              <div style={{ color: '#3399ff', fontWeight: 700, fontSize: '16px', textTransform: 'uppercase', margin: '24px 0 14px 0', borderBottom: '1px solid #e0e7f3', paddingBottom: '6px' }}>
-                2. NGOẠI KHOA & DA LIỄU
-              </div>
-
-              <SpecialtyExamBlock 
-                title="Ngoại khoa" 
-                icon={<IconStethoscope />}
-                data={formData.ngoaiKhoa}
-                onChange={val => handleChange('ngoaiKhoa', val)}
-              />
-
-              <SpecialtyExamBlock 
-                title="Da liễu" 
-                icon={<IconUser />}
-                data={formData.daLieu}
-                onChange={val => handleChange('daLieu', val)}
-              />
-
-            </div>
-          </FormModuleWrapper>
-
-          {/* MODULE MOD-08: KHÁM PHỤ KHOA */}
-          {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
-            <FormModuleWrapper 
-              id="module_clinical_obgyn" 
-              code="MOD-08" 
-              title="VIII. KHÁM PHỤ KHOA (DÀNH CHO NỮ)" 
-              icon={<IconStethoscope />} 
-              currentUser={currentUser} 
-              allowedRoles={['superadmin', 'doctor']}
-            >
-              <div style={{ marginTop: '12px' }}>
-
-                  <SpecialtyExamBlock 
-                    title="Sản khoa" 
-                    icon={<IconUser />}
-                    data={formData.sanKhoa}
-                    onChange={val => handleChange('sanKhoa', val)}
-                  />
               </div>
             </FormModuleWrapper>
           )}
 
-          {/* MODULE MOD-09: CẬN LÂM SÀNG */}
-          <FormModuleWrapper 
-            id="module_paraclinical" 
-            code="MOD-09" 
-            title="IX. KẾT QUẢ CẬN LÂM SÀNG & XÉT NGHIỆM" 
-            icon={<IconStethoscope />} 
-            currentUser={currentUser} 
-            allowedRoles={['superadmin', 'doctor']}
-          >
+          {/* MODULE MOD-06: KHÁM THỂ LỰC */}
+          <FormModuleWrapper id="module_physical_metrics" code="MOD-06" title="Khám thể lực" icon={<IconHeartPulse style={{ width: '16px', height: '16px', color: '#0984e3' }} />} currentUser={currentUser} emailPermissions={emailPermissions}>
+            <div className="syt-form-card" style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconHeartPulse style={{ color: '#0984e3' }} />
+                <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>KHÁM THỂ LỰC</h3>
+              </div>
+              <div className="syt-grid">
+                <div className="syt-field col-3">
+                  <label className="syt-label">Chiều cao (cm) <span className="syt-required-star">*</span></label>
+                  <input type="number" className="syt-input" placeholder="Nhập số (thập phân dùng...)" value={formData.chieuCao} onChange={e => handleChange('chieuCao', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Cân nặng (kg) <span className="syt-required-star">*</span></label>
+                  <input type="number" className="syt-input" placeholder="Nhập số (thập phân dùng...)" value={formData.canNang} onChange={e => handleChange('canNang', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Nhịp thở (lần/phút) <span className="syt-required-star">*</span></label>
+                  <input type="number" className="syt-input" placeholder="Nhập số (thập phân dùng...)" value={formData.nhipTho} onChange={e => handleChange('nhipTho', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Chỉ số BMI</label>
+                  <input type="text" className="syt-input" style={{ borderStyle: 'dashed' }} placeholder="Nhập số (thập phân dùng...)" readOnly value={formData.bmi} />
+                </div>
+
+                <div className="syt-field col-3">
+                  <label className="syt-label">Mạch (lần/phút) <span className="syt-required-star">*</span></label>
+                  <input type="number" className="syt-input" placeholder="Nhập số (thập phân dùng...)" value={formData.mach} onChange={e => handleChange('mach', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Huyết áp TT (mmHg) <span className="syt-required-star">*</span></label>
+                  <input type="number" className="syt-input" placeholder="Nhập số (thập phân dùng...)" value={formData.huyetApTT} onChange={e => handleChange('huyetApTT', e.target.value)} />
+                </div>
+                <div className="syt-field col-3">
+                  <label className="syt-label">Huyết áp TTr (mmHg) <span className="syt-required-star">*</span></label>
+                  <input type="number" className="syt-input" placeholder="Nhập số (thập phân dùng...)" value={formData.huyetApTTr} onChange={e => handleChange('huyetApTTr', e.target.value)} />
+                </div>
+                <div className="syt-field col-3"></div>
+
+                <div className="syt-field col-12" style={{ marginTop: '12px' }}>
+                  <label className="syt-label">Phân loại thể lực</label>
+                  <div className="syt-radio-group" style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', marginTop: '8px' }}>
+                    {['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'].map(loai => (
+                      <label key={loai} className="syt-radio-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="radio" name="phanLoaiTheLuc" style={{ width: '18px', height: '18px', cursor: 'pointer' }} value={loai} checked={formData.phanLoaiSK === loai} onChange={e => handleChange('phanLoaiSK', e.target.value as any)} />
+                        {loai}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FormModuleWrapper>
+
+          {/* MODULE MOD-07: NỘI, NGOẠI, DA LIỄU */}
+          <FormModuleWrapper id="module_clinical_internal" code="MOD-07" title="1. NỘI KHOA (Nội khoa tổng quát) & 2. NGOẠI KHOA & DA LIỄU" icon={<IconStethoscope style={{ width: '16px', height: '16px', color: '#0984e3' }} />} currentUser={currentUser} emailPermissions={emailPermissions}>
+            <div className="syt-form-card" style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconStethoscope style={{ color: '#0984e3' }} />
+                <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>1. NỘI KHOA (Nội khoa tổng quát)</h3>
+              </div>
+              <SpecialtyExamBlock title="Tuần hoàn" icon={<IconHeartPulse />} data={formData.tuanHoan} onChange={val => handleChange('tuanHoan', val)} />
+              <SpecialtyExamBlock title="Hô hấp" icon={<IconStethoscope />} data={formData.hoHap} onChange={val => handleChange('hoHap', val)} />
+              <SpecialtyExamBlock title="Tiêu hóa" icon={<IconBriefcase />} data={formData.tieuHoa} onChange={val => handleChange('tieuHoa', val)} />
+              <SpecialtyExamBlock title="Thận - Tiết niệu" icon={<IconFileText />} data={formData.thanTietNieu} onChange={val => handleChange('thanTietNieu', val)} />
+              <SpecialtyExamBlock title="Nội tiết" icon={<IconUser />} data={formData.noiTiet} onChange={val => handleChange('noiTiet', val)} />
+              <SpecialtyExamBlock title="Cơ - xương - khớp" icon={<IconHeartPulse />} data={formData.coXuongKhop} onChange={val => handleChange('coXuongKhop', val)} />
+              <SpecialtyExamBlock title="Thần kinh" icon={<IconUser />} data={formData.thanKinh} onChange={val => handleChange('thanKinh', val)} />
+              <SpecialtyExamBlock title="Tâm thần" icon={<IconUser />} data={formData.tamThan} onChange={val => handleChange('tamThan', val)} />
+
+              <div style={{ marginTop: '24px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconStethoscope style={{ color: '#0984e3' }} />
+                <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>2. NGOẠI KHOA & DA LIỄU</h3>
+              </div>
+              <SpecialtyExamBlock title="Ngoại khoa" icon={<IconStethoscope />} data={formData.ngoaiKhoa} onChange={val => handleChange('ngoaiKhoa', val)} />
+              <SpecialtyExamBlock title="Da liễu" icon={<IconUser />} data={formData.daLieu} onChange={val => handleChange('daLieu', val)} />
+            </div>
+          </FormModuleWrapper>
+
+          {/* MODULE MOD-08: SẢN PHỤ KHOA */}
+          {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
+            <FormModuleWrapper id="module_clinical_obgyn" code="MOD-08" title="4. SẢN PHỤ KHOA" icon={<IconUser style={{ width: '16px', height: '16px', color: '#0984e3' }} />} currentUser={currentUser} emailPermissions={emailPermissions}>
+              <div className="syt-form-card" style={{ padding: '24px' }}>
+                <div style={{ marginBottom: '24px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <IconUser style={{ color: '#0984e3' }} />
+                  <h3 style={{ margin: 0, color: '#0984e3', fontSize: '16px', textTransform: 'uppercase' }}>4. SẢN PHỤ KHOA</h3>
+                </div>
+                
+                {/* SẢN KHOA */}
+                <div style={{ marginBottom: '24px', border: '1px solid #e0e7f3', borderRadius: '6px', padding: '16px', background: '#ffffff' }}>
+                  <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Sản khoa
+                  </div>
+                  <div className="syt-grid">
+                    <div className="syt-field col-12" style={{ marginBottom: '12px' }}>
+                      <label className="syt-checkbox-item" style={{ margin: 0 }}>
+                        <input type="checkbox" checked={formData.sanKhoa?.normal ?? true} onChange={e => handleChange('sanKhoa', { ...formData.sanKhoa, normal: e.target.checked })} />
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>Chưa phát hiện bất thường</span>
+                      </label>
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán sơ bộ</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.sanKhoa?.icdPreliminary || ''} onChange={e => handleChange('sanKhoa', { ...formData.sanKhoa, icdPreliminary: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán xác định</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.sanKhoa?.icdFinal || ''} onChange={e => handleChange('sanKhoa', { ...formData.sanKhoa, icdFinal: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-12" style={{ marginTop: '12px' }}>
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Phân loại <span className="syt-required-star">*</span></label>
+                      <div className="syt-radio-group" style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'].map(loai => (
+                          <label key={loai} className="syt-radio-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="radio" name="phanLoaiSanKhoa" style={{ width: '18px', height: '18px', cursor: 'pointer' }} value={loai} checked={formData.sanKhoa?.classification === loai} onChange={e => handleChange('sanKhoa', { ...formData.sanKhoa, classification: e.target.value })} />
+                            {loai}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PHỤ KHOA */}
+                <div style={{ border: '1px solid #e0e7f3', borderRadius: '6px', padding: '16px', background: '#ffffff' }}>
+                  <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Phụ khoa
+                  </div>
+                  <div className="syt-grid">
+                    <div className="syt-field col-12" style={{ marginBottom: '12px' }}>
+                      <label className="syt-checkbox-item" style={{ margin: 0 }}>
+                        <input type="checkbox" checked={formData.phuKhoa?.normal ?? true} onChange={e => handleChange('phuKhoa', { ...formData.phuKhoa, normal: e.target.checked })} />
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>Chưa phát hiện bất thường</span>
+                      </label>
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán sơ bộ</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.phuKhoa?.icdPreliminary || ''} onChange={e => handleChange('phuKhoa', { ...formData.phuKhoa, icdPreliminary: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán xác định</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.phuKhoa?.icdFinal || ''} onChange={e => handleChange('phuKhoa', { ...formData.phuKhoa, icdFinal: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-12" style={{ marginTop: '12px' }}>
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Phân loại <span className="syt-required-star">*</span></label>
+                      <div className="syt-radio-group" style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'].map(loai => (
+                          <label key={loai} className="syt-radio-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="radio" name="phanLoaiPhuKhoa" style={{ width: '18px', height: '18px', cursor: 'pointer' }} value={loai} checked={formData.phuKhoa?.classification === loai} onChange={e => handleChange('phuKhoa', { ...formData.phuKhoa, classification: e.target.value })} />
+                            {loai}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </FormModuleWrapper>
+          )}
+
+          {/* MODULE MOD-09: MẮT, TAI MŨI HỌNG, RĂNG HÀM MẶT */}
+          <FormModuleWrapper id="module_clinical_eye_ent_dental" code="MOD-09" title="4. MẮT & 5. TAI - MŨI - HỌNG & 6. RĂNG - HÀM - MẶT" icon={<IconStethoscope style={{ width: '16px', height: '16px', color: '#0984e3' }} />} currentUser={currentUser} emailPermissions={emailPermissions}>
+            <div className="syt-form-card" style={{ padding: '24px' }}>
+              {/* MẮT */}
+              <div style={{ marginBottom: '24px', border: '1px solid #e0e7f3', borderRadius: '6px', background: '#ffffff' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                  {/* Cột trái: Khám thị lực */}
+                  <div style={{ flex: '1 1 50%', minWidth: '300px', padding: '16px', borderRight: '1px solid #e0e7f3' }}>
+                    <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Khám thị lực
+                    </div>
+                    
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: '#1e293b' }}>Không kính</div>
+                    <div className="syt-grid" style={{ marginBottom: '12px' }}>
+                      <div className="syt-field col-6">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Mắt phải (.../10)</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khongKinhPhai} onChange={e => handleChange('khongKinhPhai', e.target.value)} />
+                      </div>
+                      <div className="syt-field col-6">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Mắt trái (.../10)</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khongKinhTrai} onChange={e => handleChange('khongKinhTrai', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: '#1e293b' }}>Kính lỗ</div>
+                    <div className="syt-grid" style={{ marginBottom: '12px' }}>
+                      <div className="syt-field col-6">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Mắt phải (.../10)</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.kinhLoPhai} onChange={e => handleChange('kinhLoPhai', e.target.value)} />
+                      </div>
+                      <div className="syt-field col-6">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Mắt trái (.../10)</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.kinhLoTrai} onChange={e => handleChange('kinhLoTrai', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: '#1e293b' }}>Có kính</div>
+                    <div className="syt-grid">
+                      <div className="syt-field col-6">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Mắt phải (.../10)</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.coKinhPhai} onChange={e => handleChange('coKinhPhai', e.target.value)} />
+                      </div>
+                      <div className="syt-field col-6">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Mắt trái (.../10)</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.coKinhTrai} onChange={e => handleChange('coKinhTrai', e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cột phải: Khám khúc xạ */}
+                  <div style={{ flex: '1 1 50%', minWidth: '300px', padding: '16px' }}>
+                    <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Khám khúc xạ (nếu có)
+                    </div>
+
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: '#1e293b' }}>Mắt phải</div>
+                    <div className="syt-grid" style={{ marginBottom: '12px' }}>
+                      <div className="syt-field col-4">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Độ cầu</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khucXaPhaiCau} onChange={e => handleChange('khucXaPhaiCau', e.target.value)} />
+                      </div>
+                      <div className="syt-field col-4">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Độ trụ</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khucXaPhaiTru} onChange={e => handleChange('khucXaPhaiTru', e.target.value)} />
+                      </div>
+                      <div className="syt-field col-4">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Trục</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khucXaPhaiTruc} onChange={e => handleChange('khucXaPhaiTruc', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: '#1e293b' }}>Mắt trái</div>
+                    <div className="syt-grid">
+                      <div className="syt-field col-4">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Độ cầu</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khucXaTraiCau} onChange={e => handleChange('khucXaTraiCau', e.target.value)} />
+                      </div>
+                      <div className="syt-field col-4">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Độ trụ</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khucXaTraiTru} onChange={e => handleChange('khucXaTraiTru', e.target.value)} />
+                      </div>
+                      <div className="syt-field col-4">
+                        <label className="syt-label" style={{ fontSize: '12px' }}>Trục</label>
+                        <input type="text" className="syt-input" placeholder="Nhập số..." value={formData.khucXaTraiTruc} onChange={e => handleChange('khucXaTraiTruc', e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ padding: '16px', borderTop: '1px solid #e0e7f3', background: '#f8fafc', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px' }}>
+                  <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Mắt
+                  </div>
+                  <div className="syt-grid">
+                    <div className="syt-field col-12" style={{ marginBottom: '12px' }}>
+                      <label className="syt-checkbox-item" style={{ margin: 0 }}>
+                        <input type="checkbox" checked={formData.mat?.normal ?? true} onChange={e => handleChange('mat', { ...formData.mat, normal: e.target.checked })} />
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>Chưa phát hiện bất thường</span>
+                      </label>
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán sơ bộ</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.mat?.icdPreliminary || ''} onChange={e => handleChange('mat', { ...formData.mat, icdPreliminary: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán xác định</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.mat?.icdFinal || ''} onChange={e => handleChange('mat', { ...formData.mat, icdFinal: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-12" style={{ marginTop: '12px' }}>
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Phân loại <span className="syt-required-star">*</span></label>
+                      <div className="syt-radio-group" style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'].map(loai => (
+                          <label key={loai} className="syt-radio-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="radio" name="phanLoaiMat" style={{ width: '18px', height: '18px', cursor: 'pointer' }} value={loai} checked={formData.mat?.classification === loai} onChange={e => handleChange('mat', { ...formData.mat, classification: e.target.value })} />
+                            {loai}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* TAI MŨI HỌNG */}
+              <div style={{ marginBottom: '24px', border: '1px solid #e0e7f3', borderRadius: '6px', background: '#ffffff' }}>
+                <div style={{ padding: '16px', borderBottom: '1px solid #e0e7f3' }}>
+                  <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Kết quả khám thính lực
+                  </div>
+                  
+                  <div className="syt-grid" style={{ marginBottom: '12px' }}>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Tai trái (Nói thường)</label>
+                      <input type="text" className="syt-input" placeholder="Nhập số (thập phân dùng dấu phẩy)" value={formData.taiTraiNoiThuong || ''} onChange={e => handleChange('taiTraiNoiThuong', e.target.value)} />
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Tai trái (Nói thầm)</label>
+                      <input type="text" className="syt-input" placeholder="Nhập số (thập phân dùng dấu phẩy)" value={formData.taiTraiNoiTham || ''} onChange={e => handleChange('taiTraiNoiTham', e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="syt-grid">
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Tai phải (Nói thường)</label>
+                      <input type="text" className="syt-input" placeholder="Nhập số (thập phân dùng dấu phẩy)" value={formData.taiPhaiNoiThuong || ''} onChange={e => handleChange('taiPhaiNoiThuong', e.target.value)} />
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Tai phải (Nói thầm)</label>
+                      <input type="text" className="syt-input" placeholder="Nhập số (thập phân dùng dấu phẩy)" value={formData.taiPhaiNoiTham || ''} onChange={e => handleChange('taiPhaiNoiTham', e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ padding: '16px', background: '#f8fafc', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px' }}>
+                  <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Tai - Mũi - Họng
+                  </div>
+                  <div className="syt-grid">
+                    <div className="syt-field col-12" style={{ marginBottom: '12px' }}>
+                      <label className="syt-checkbox-item" style={{ margin: 0 }}>
+                        <input type="checkbox" checked={formData.taiMuiHong?.normal ?? true} onChange={e => handleChange('taiMuiHong', { ...formData.taiMuiHong, normal: e.target.checked })} />
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>Chưa phát hiện bất thường</span>
+                      </label>
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán sơ bộ</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.taiMuiHong?.icdPreliminary || ''} onChange={e => handleChange('taiMuiHong', { ...formData.taiMuiHong, icdPreliminary: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán xác định</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.taiMuiHong?.icdFinal || ''} onChange={e => handleChange('taiMuiHong', { ...formData.taiMuiHong, icdFinal: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-12" style={{ marginTop: '12px' }}>
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Phân loại <span className="syt-required-star">*</span></label>
+                      <div className="syt-radio-group" style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'].map(loai => (
+                          <label key={loai} className="syt-radio-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="radio" name="phanLoaiTMH" style={{ width: '18px', height: '18px', cursor: 'pointer' }} value={loai} checked={formData.taiMuiHong?.classification === loai} onChange={e => handleChange('taiMuiHong', { ...formData.taiMuiHong, classification: e.target.value })} />
+                            {loai}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RĂNG HÀM MẶT */}
+              <div style={{ marginBottom: '24px', border: '1px solid #e0e7f3', borderRadius: '6px', background: '#ffffff' }}>
+                <div style={{ padding: '16px', borderBottom: '1px solid #e0e7f3' }}>
+                  <div style={{ color: '#1b365d', fontWeight: 'bold', fontSize: '14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconUser style={{ color: '#0984e3', width: '16px', height: '16px' }} /> Răng - Hàm - Mặt
+                  </div>
+                  
+                  {/* Interactive Dental Chart */}
+                  <div style={{ border: '1px solid #0d9488', borderRadius: '6px', padding: '24px 16px', marginBottom: '16px', background: '#f0fdfa' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #0d9488', paddingBottom: '16px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', gap: '12px', paddingRight: '20px', borderRight: '2px solid #0d9488' }}>
+                        {[18, 17, 16, 15, 14, 13, 12, 11].map(n => {
+                          const val = formData.rangStatuses?.[n] ?? 0;
+                          const colors: Record<number, string> = {
+                            0: '#10b981', // green
+                            1: '#ef4444', // red
+                            2: '#f59e0b', // amber
+                            3: '#3b82f6', // blue
+                            4: '#6b7280', // gray
+                            5: '#9ca3af', // light gray
+                            6: '#8b5cf6', // purple
+                            7: '#ec4899', // pink
+                            8: '#14b8a6', // teal
+                            9: '#000000', // black
+                          };
+                          const color = colors[val] || '#fff';
+                          return (
+                          <div key={n} style={{ textAlign: 'center', fontWeight: 'bold', color: '#0f766e', position: 'relative' }}>
+                            <div style={{ width: '26px', height: '36px', background: color, border: '1px solid #cbd5e1', borderRadius: '4px', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '900', color: val === 0 ? '#ffffff' : '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                              {val}
+                            </div>
+                            {n}
+                            <select 
+                              style={{ position: 'absolute', top: 0, left: 0, width: '26px', height: '36px', opacity: 0, cursor: 'pointer' }}
+                              value={val}
+                              onChange={e => handleChange('rangStatuses', { ...formData.rangStatuses, [n]: parseInt(e.target.value, 10) })}
+                            >
+                              <option value="0">0 - Bình thường</option>
+                              <option value="1">1 - Sâu</option>
+                              <option value="2">2 - Trám sâu lại</option>
+                              <option value="3">3 - Trám tốt</option>
+                              <option value="4">4 - Mất do sâu</option>
+                              <option value="5">5 - Mất lý do khác</option>
+                              <option value="6">6 - Bít hố rãnh</option>
+                              <option value="7">7 - Trụ, cầu, implant</option>
+                              <option value="8">8 - Chưa mọc</option>
+                              <option value="9">9 - Loại trừ</option>
+                            </select>
+                          </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', paddingLeft: '20px' }}>
+                        {[21, 22, 23, 24, 25, 26, 27, 28].map(n => {
+                          const val = formData.rangStatuses?.[n] ?? 0;
+                          const colors: Record<number, string> = {
+                            0: '#10b981', // green
+                            1: '#ef4444', // red
+                            2: '#f59e0b', // amber
+                            3: '#3b82f6', // blue
+                            4: '#6b7280', // gray
+                            5: '#9ca3af', // light gray
+                            6: '#8b5cf6', // purple
+                            7: '#ec4899', // pink
+                            8: '#14b8a6', // teal
+                            9: '#000000', // black
+                          };
+                          const color = colors[val] || '#fff';
+                          return (
+                          <div key={n} style={{ textAlign: 'center', fontWeight: 'bold', color: '#0f766e', position: 'relative' }}>
+                            <div style={{ width: '26px', height: '36px', background: color, border: '1px solid #cbd5e1', borderRadius: '4px', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '900', color: val === 0 ? '#ffffff' : '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                              {val}
+                            </div>
+                            {n}
+                            <select 
+                              style={{ position: 'absolute', top: 0, left: 0, width: '26px', height: '36px', opacity: 0, cursor: 'pointer' }}
+                              value={val}
+                              onChange={e => handleChange('rangStatuses', { ...formData.rangStatuses, [n]: parseInt(e.target.value, 10) })}
+                            >
+                              <option value="0">0 - Bình thường</option>
+                              <option value="1">1 - Sâu</option>
+                              <option value="2">2 - Trám sâu lại</option>
+                              <option value="3">3 - Trám tốt</option>
+                              <option value="4">4 - Mất do sâu</option>
+                              <option value="5">5 - Mất lý do khác</option>
+                              <option value="6">6 - Bít hố rãnh</option>
+                              <option value="7">7 - Trụ, cầu, implant</option>
+                              <option value="8">8 - Chưa mọc</option>
+                              <option value="9">9 - Loại trừ</option>
+                            </select>
+                          </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', gap: '12px', paddingRight: '20px', borderRight: '2px solid #0d9488' }}>
+                        {[48, 47, 46, 45, 44, 43, 42, 41].map(n => {
+                          const val = formData.rangStatuses?.[n] ?? 0;
+                          const colors: Record<number, string> = {
+                            0: '#10b981', // green
+                            1: '#ef4444', // red
+                            2: '#f59e0b', // amber
+                            3: '#3b82f6', // blue
+                            4: '#6b7280', // gray
+                            5: '#9ca3af', // light gray
+                            6: '#8b5cf6', // purple
+                            7: '#ec4899', // pink
+                            8: '#14b8a6', // teal
+                            9: '#000000', // black
+                          };
+                          const color = colors[val] || '#fff';
+                          return (
+                          <div key={n} style={{ textAlign: 'center', fontWeight: 'bold', color: '#0f766e', position: 'relative' }}>
+                            <div style={{ width: '26px', height: '36px', background: color, border: '1px solid #cbd5e1', borderRadius: '4px', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '900', color: val === 0 ? '#ffffff' : '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                              {val}
+                            </div>
+                            {n}
+                            <select 
+                              style={{ position: 'absolute', top: 0, left: 0, width: '26px', height: '36px', opacity: 0, cursor: 'pointer' }}
+                              value={val}
+                              onChange={e => handleChange('rangStatuses', { ...formData.rangStatuses, [n]: parseInt(e.target.value, 10) })}
+                            >
+                              <option value="0">0 - Bình thường</option>
+                              <option value="1">1 - Sâu</option>
+                              <option value="2">2 - Trám sâu lại</option>
+                              <option value="3">3 - Trám tốt</option>
+                              <option value="4">4 - Mất do sâu</option>
+                              <option value="5">5 - Mất lý do khác</option>
+                              <option value="6">6 - Bít hố rãnh</option>
+                              <option value="7">7 - Trụ, cầu, implant</option>
+                              <option value="8">8 - Chưa mọc</option>
+                              <option value="9">9 - Loại trừ</option>
+                            </select>
+                          </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', paddingLeft: '20px' }}>
+                        {[31, 32, 33, 34, 35, 36, 37, 38].map(n => {
+                          const val = formData.rangStatuses?.[n] ?? 0;
+                          const colors: Record<number, string> = {
+                            0: '#10b981', // green
+                            1: '#ef4444', // red
+                            2: '#f59e0b', // amber
+                            3: '#3b82f6', // blue
+                            4: '#6b7280', // gray
+                            5: '#9ca3af', // light gray
+                            6: '#8b5cf6', // purple
+                            7: '#ec4899', // pink
+                            8: '#14b8a6', // teal
+                            9: '#000000', // black
+                          };
+                          const color = colors[val] || '#fff';
+                          return (
+                          <div key={n} style={{ textAlign: 'center', fontWeight: 'bold', color: '#0f766e', position: 'relative' }}>
+                            <div style={{ width: '26px', height: '36px', background: color, border: '1px solid #cbd5e1', borderRadius: '4px', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '900', color: val === 0 ? '#ffffff' : '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                              {val}
+                            </div>
+                            {n}
+                            <select 
+                              style={{ position: 'absolute', top: 0, left: 0, width: '26px', height: '36px', opacity: 0, cursor: 'pointer' }}
+                              value={val}
+                              onChange={e => handleChange('rangStatuses', { ...formData.rangStatuses, [n]: parseInt(e.target.value, 10) })}
+                            >
+                              <option value="0">0 - Bình thường</option>
+                              <option value="1">1 - Sâu</option>
+                              <option value="2">2 - Trám sâu lại</option>
+                              <option value="3">3 - Trám tốt</option>
+                              <option value="4">4 - Mất do sâu</option>
+                              <option value="5">5 - Mất lý do khác</option>
+                              <option value="6">6 - Bít hố rãnh</option>
+                              <option value="7">7 - Trụ, cầu, implant</option>
+                              <option value="8">8 - Chưa mọc</option>
+                              <option value="9">9 - Loại trừ</option>
+                            </select>
+                          </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ padding: '16px', background: '#f8fafc', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px' }}>
+                  <div className="syt-grid">
+                    <div className="syt-field col-12" style={{ marginBottom: '12px' }}>
+                      <label className="syt-checkbox-item" style={{ margin: 0 }}>
+                        <input type="checkbox" checked={formData.rangHamMat?.normal ?? true} onChange={e => handleChange('rangHamMat', { ...formData.rangHamMat, normal: e.target.checked })} />
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>Chưa phát hiện bất thường</span>
+                      </label>
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán sơ bộ</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.rangHamMat?.icdPreliminary || ''} onChange={e => handleChange('rangHamMat', { ...formData.rangHamMat, icdPreliminary: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-6">
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán xác định</label>
+                      <input type="text" className="syt-input" placeholder="ghi rõ theo mã ICD" value={formData.rangHamMat?.icdFinal || ''} onChange={e => handleChange('rangHamMat', { ...formData.rangHamMat, icdFinal: e.target.value })} />
+                    </div>
+                    <div className="syt-field col-12" style={{ marginTop: '12px' }}>
+                      <label className="syt-label" style={{ fontSize: '12px' }}>Phân loại <span className="syt-required-star">*</span></label>
+                      <div className="syt-radio-group" style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'].map(loai => (
+                          <label key={loai} className="syt-radio-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="radio" name="phanLoaiRHM" style={{ width: '18px', height: '18px', cursor: 'pointer' }} value={loai} checked={formData.rangHamMat?.classification === loai} onChange={e => handleChange('rangHamMat', { ...formData.rangHamMat, classification: e.target.value })} />
+                            {loai}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FormModuleWrapper>
+
+          {/* MODULE MOD-10: CẬN LÂM SÀNG TỔNG HỢP */}
+          <FormModuleWrapper id="module_paraclinical_blood" code="MOD-10" title="VI. KẾT QUẢ CẬN LÂM SÀNG & XÉT NGHIỆM" icon={<IconStethoscope />} currentUser={currentUser} emailPermissions={emailPermissions}>
+          {/* SECTION VI: KẾT QUẢ CẬN LÂM SÀNG */}
+          <div id="sec-canlamsang" className="syt-section-header">
+            <IconStethoscope /> VI. KẾT QUẢ CẬN LÂM SÀNG & XÉT NGHIỆM
+          </div>
+
+          <div className="dx-form-group-content">
             <b style={{ color: '#3399ff', fontSize: '15px', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>
               1. Khám phân loại sức khỏe để đi học, đi làm / 2. Khám sức khỏe định kỳ
             </b>
@@ -1670,18 +1999,18 @@ export const App: React.FC = () => {
                 />
               </div>
             </div>
+          </div>
+
           </FormModuleWrapper>
 
-          {/* MODULE MOD-10: KẾT LUẬN */}
-          <FormModuleWrapper 
-            id="module_conclusion" 
-            code="MOD-10" 
-            title="X. KẾT LUẬN & ĐỀ NGHỊ BÁC SĨ" 
-            icon={<IconUser />} 
-            currentUser={currentUser} 
-            allowedRoles={['superadmin', 'doctor']}
-          >
-            <div style={{ background: '#f4f8fc', border: '1px solid #cfe0f0', borderRadius: '8px', padding: '16px' }}>
+          {/* MODULE MOD-13: KẾT LUẬN & ĐỀ NGHỊ BÁC SĨ */}
+          <FormModuleWrapper id="module_doctor_conclusion" code="MOD-13" title="V. KẾT LUẬN & ĐỀ NGHỊ BÁC SĨ" icon={<IconCheck />} currentUser={currentUser} emailPermissions={emailPermissions}>
+          {/* SECTION VII: KẾT LUẬN SỨC KHỎE (FROM LATEST HTML DOM) */}
+          <div id="sec-ketluan" className="syt-section-header">
+            <IconUser /> VII. KẾT LUẬN & ĐỀ NGHỊ BÁC SĨ (V. KẾT LUẬN)
+          </div>
+
+          <div className="dx-form-group-content" style={{ background: '#f4f8fc', border: '1px solid #cfe0f0' }}>
             <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#0d47a1', marginBottom: '12px' }}>
               V. KẾT LUẬN PHÂN LOẠI SỨC KHỎE THEO QUY ĐỊNH BỘ Y TẾ
             </div>
@@ -1767,16 +2096,13 @@ export const App: React.FC = () => {
                 </div>
               </div>
             </div>
-            </div>
+          </div>
           </FormModuleWrapper>
 
           {/* BOTTOM FORM BUTTONS */}
           <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
             <button className="syt-btn syt-btn-outline" onClick={handleReset}>
               <IconRotateCcw /> Hủy bỏ / Nhập lại
-            </button>
-            <button className="syt-btn syt-btn-info" style={{ padding: '12px 28px', fontSize: '15px', background: '#8b5cf6', borderColor: '#7c3aed', color: '#fff' }} onClick={handleExportJSON}>
-              <IconFileText /> XUẤT JSON (API)
             </button>
             <button className="syt-btn syt-btn-primary" style={{ padding: '12px 28px', fontSize: '15px' }} onClick={handleSaveForm}>
               <IconSave /> LƯU PHIẾU KHÁM SỨC KHỎE
@@ -1962,6 +2288,7 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+      
       {/* MODAL: GOOGLE OAUTH AUTHENTICATION */}
       {showGoogleModal && (
         <div className="syt-modal-overlay">
@@ -1984,91 +2311,10 @@ export const App: React.FC = () => {
                 </p>
               </div>
 
-              {/* SUPERADMIN ACCOUNT CARD */}
-              <div 
-                style={{ 
-                  border: '2px solid #f59e0b', 
-                  borderRadius: '8px', 
-                  padding: '14px 16px', 
-                  background: 'linear-gradient(135deg, #fffbe3 0%, #ffffff 100%)', 
-                  cursor: 'pointer', 
-                  marginBottom: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)',
-                  transition: 'transform 0.15s'
-                }}
-                onClick={() => handleLoginSuccess({
-                  id: 'google-superadmin-001',
-                  name: 'Nguyễn Văn Tiến',
-                  email: 'tienmed@gmail.com',
-                  picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tienmed',
-                  role: 'Superadmin - Quản trị viên Tối cao SYT'
-                })}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                    👑
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 'bold', color: '#78350f', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      tienmed@gmail.com
-                      <span style={{ background: '#f59e0b', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
-                        SUPERADMIN
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#92400e', marginTop: '2px' }}>
-                      Nguyễn Văn Tiến • Quản trị viên Tối cao SYT
-                    </div>
-                  </div>
-                </div>
-                <button className="syt-btn syt-btn-primary" style={{ padding: '6px 14px', fontSize: '12px', background: '#d97706' }}>
-                  Đăng nhập Superadmin
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '30px 0' }}>
+                <div id="google-signin-btn-container"></div>
               </div>
-
-              {/* STANDARD DOCTOR ACCOUNT CARD */}
-              <div 
-                style={{ 
-                  border: '1px solid #cbd5e1', 
-                  borderRadius: '8px', 
-                  padding: '12px 16px', 
-                  background: '#f8fafc', 
-                  cursor: 'pointer', 
-                  marginBottom: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}
-                onClick={() => handleLoginSuccess({
-                  id: 'google-doctor-002',
-                  name: 'BS. CKI NGUYỄN VĂN AN',
-                  email: 'bs.nguyenvanan@syt.hochiminhcity.gov.vn',
-                  picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DoctorAn',
-                  role: 'Bác sĩ / Cán bộ Y tế'
-                })}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <img 
-                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=DoctorAn" 
-                    alt="Doctor" 
-                    style={{ width: '38px', height: '38px', borderRadius: '50%', border: '1px solid #cbd5e1' }}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 'bold', color: '#1b365d', fontSize: '13px' }}>
-                      bs.nguyenvanan@syt.hochiminhcity.gov.vn
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                      BS. CKI NGUYỄN VĂN AN • Khoa Khám sức khỏe
-                    </div>
-                  </div>
-                </div>
-                <button className="syt-btn syt-btn-outline" style={{ padding: '6px 12px', fontSize: '12px' }}>
-                  Chọn tài khoản
-                </button>
-              </div>
-
+              
               <div style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8' }}>
                 Google Identity Services Token Verification • SSL 256-bit Encrypted
               </div>
@@ -2081,6 +2327,140 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      {/* PERMISSION MANAGEMENT MODAL (SUPERADMIN ONLY) */}
+      {showPermissionModal && (
+        <div className="syt-modal-overlay">
+          <div className="syt-modal-content" style={{ width: '800px', maxWidth: '95%' }}>
+            <div className="syt-modal-header">
+              <h3><IconCheck /> Quản lý Phân quyền Module theo Email</h3>
+              <button className="syt-modal-close" onClick={() => setShowPermissionModal(false)}>×</button>
+            </div>
+            
+            <div className="syt-modal-body" style={{ background: '#f8fafc', padding: '20px' }}>
+              <div style={{ marginBottom: '24px', background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ margin: '0 0 12px 0', color: '#0f172a' }}>Thêm / Cập nhật Email</h4>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                  <input 
+                    type="email" 
+                    className="syt-input" 
+                    style={{ flex: 1 }} 
+                    placeholder="Nhập email bác sĩ (VD: bacsiA@gmail.com)" 
+                    value={newEmailInput}
+                    onChange={(e) => setNewEmailInput(e.target.value.toLowerCase())}
+                  />
+                </div>
+                
+                <h5 style={{ margin: '0 0 8px 0', color: '#334155' }}>Chọn các Module được phép chỉnh sửa:</h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f1f5f9', padding: '12px', borderRadius: '6px' }}>
+                  {FORM_MODULE_CATALOG.map(mod => (
+                    <label key={mod.code} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedModules.includes(mod.code)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedModules([...selectedModules, mod.code]);
+                          } else {
+                            setSelectedModules(selectedModules.filter(m => m !== mod.code));
+                          }
+                        }}
+                      />
+                      <span style={{ fontWeight: 600, color: '#0ea5e9' }}>{mod.code}</span>
+                      <span>{mod.title}</span>
+                    </label>
+                  ))}
+                </div>
+                
+                <div style={{ marginTop: '16px', textAlign: 'right' }}>
+                  <button 
+                    className="syt-btn syt-btn-primary" 
+                    onClick={() => {
+                      if (!newEmailInput.trim() || !newEmailInput.includes('@')) {
+                        alert('Vui lòng nhập email hợp lệ!');
+                        return;
+                      }
+                      setEmailPermissions(prev => ({
+                        ...prev,
+                        [newEmailInput.trim()]: selectedModules
+                      }));
+                      setNewEmailInput('');
+                      setSelectedModules([]);
+                      triggerToast(`Đã lưu quyền cho email ${newEmailInput}`);
+                    }}
+                  >
+                    Lưu Quyền Cho Email Này
+                  </button>
+                </div>
+              </div>
+
+              <h4 style={{ margin: '0 0 12px 0', color: '#0f172a' }}>Danh sách Email đã được phân quyền</h4>
+              {Object.keys(emailPermissions).length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  Chưa có email nào được cấp quyền. (Chỉ Superadmin mới có toàn quyền)
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {Object.entries(emailPermissions).map(([email, mods]) => (
+                    <div key={email} style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>{email}</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {mods.map(m => (
+                            <span key={m} style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>
+                              {m}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <button 
+                        className="syt-btn syt-btn-outline" 
+                        style={{ borderColor: '#ef4444', color: '#ef4444', padding: '6px 12px' }}
+                        onClick={() => {
+                          const newPerms = { ...emailPermissions };
+                          delete newPerms[email];
+                          setEmailPermissions(newPerms);
+                          triggerToast(`Đã xóa quyền của ${email}`);
+                        }}
+                      >
+                        <IconTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="syt-modal-footer">
+              <button className="syt-btn syt-btn-primary" onClick={() => setShowPermissionModal(false)}>Đóng & Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      
+
+      {/* EXPORT BUTTON */}
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 999 }}>
+        <button 
+          className="syt-btn syt-btn-primary" 
+          style={{ background: '#10b981', padding: '12px 24px', fontSize: '16px', borderRadius: '50px', boxShadow: '0 4px 12px rgba(16,185,129,0.4)', border: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          onClick={() => {
+            const payload = buildExportPayload(formData);
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "kham_suc_khoe.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            triggerToast("Đã xuất file JSON thành công!");
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          XUẤT DỮ LIỆU (JSON)
+        </button>
+      </div>
     </div>
   );
 };

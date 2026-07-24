@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import type { FormHealthRecord, GoogleUser } from './types';
+import { buildExportPayload } from './exportHelper';
 import {
   DEFAULT_PERSONAL_HISTORY_ROWS,
   DEFAULT_SPECIALTY_EXAM,
@@ -530,15 +531,22 @@ export const App: React.FC = () => {
   };
 
   const handleExportJSON = () => {
-    const payload = buildExportPayload(formData);
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", hoso_.json);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-    triggerToast("Đã xuất file JSON thành công!");
+    try {
+      const payload = buildExportPayload(formData);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.href = url;
+      downloadAnchorNode.download = hoso_.json;
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      document.body.removeChild(downloadAnchorNode);
+      URL.revokeObjectURL(url);
+      triggerToast("Đã xuất file JSON thành công!");
+    } catch (error) {
+      console.error("Lỗi khi tạo file JSON:", error);
+      triggerToast("Lỗi khi xuất file JSON!");
+    }
   };
 
   const handleReset = () => {

@@ -37,20 +37,20 @@ export const buildExportPayload = (formData: any) => {
     return {
         tthc: {
             ngay_kham: new Date().toISOString().split('T')[0],
-            doituongkham: Number(formData.doiTuong) || 16,
-            diadiemkham: 4052,
-            dinh_danh_ca_nhan: formData.cccd || "050201009818",
+            doi_tuong_kham: Number(formData.doiTuong) || 16,
+            dia_diem_kham: 4052,
+            dinh_danh_ca_nhan: formData.soCCCD || "050201009818",
             ho_ten: formData.hoTen || "Nguyễn văn Duc",
-            ngay_sinh: formData.ngaySinh ? formData.ngaySinh.split('-').reverse().join('/') : "10/01/2001",
+            ngay_sinh: formData.ngaySinh || "2001-01-10",
             gioi_tinh: formData.gioiTinh === 'Nam' ? 1 : (formData.gioiTinh === 'Nữ' ? 2 : 1),
-            the_bhyt: "123",
-            dan_toc_id: ETHNIC_GROUPS.indexOf(formData.danToc) !== -1 ? ETHNIC_GROUPS.indexOf(formData.danToc) + 1 : 1,
+            the_bhyt: formData.soBHYT || "123",
+            dan_toc_id: ETHNIC_GROUPS.indexOf(formData.danToc) !== -1 ? ETHNIC_GROUPS.indexOf(formData.danToc) + 1 : 15,
             sdt: formData.soDienThoai || "0326628622",
             nhom_mau_id: 1,
             yeu_to_nhom_mau_id: 1,
             dia_chi_hien_tai: formData.diaChi || "123 Đường Số 1",
-            wardId: 2,
-            wardCode: "26803",
+            ward_id: 2,
+            ward_code: "26803",
             nghenghiep_id: 228,
             nghenghiep_code: "",
             noi_cong_tac: 1,
@@ -58,7 +58,7 @@ export const buildExportPayload = (formData: any) => {
             hinh_thuc_chi_tra_khamsk: "4040",
             hinh_thuc_chi_tra_khamsk_chi_tiet: "5083",
             nguonkhac_ghiro: "test nguonkhac_ghiro",
-            lydokham: formData.lyDoKham || "ly do kham"
+            ly_do_kham: formData.lyDoKham || "ly do kham"
         },
         tien_su: {
             giadinh_macbenh: formData.tienSuGiaDinh?.length > 0 ? 1 : 0,
@@ -94,6 +94,7 @@ export const buildExportPayload = (formData: any) => {
             ...mapSpecialty('noitiet', formData.noiTiet),
             ...mapSpecialty('coxuongkhop', formData.coXuongKhop),
             ...mapSpecialty('thankinh', formData.thanKinh),
+            thankinh_chuandoansobo: formData.thanKinh?.icdPreliminary ? 1 : 0, // Fallback for typo in API spec
             ...mapSpecialty('tamthan', formData.tamThan),
             ...mapSpecialty('ngoaikhoa', formData.ngoaiKhoa),
             ...mapSpecialty('dalieu', formData.daLieu),

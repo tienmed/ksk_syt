@@ -32,6 +32,13 @@ export const DEFAULT_PERSONAL_HISTORY_ROWS: PersonalHistoryRow[] = INITIAL_PERSO
   doctorAssessment: ''
 }));
 
+export const DEFAULT_SPECIALTY_EXAM = {
+  normal: true,
+  icdPreliminary: "",
+  icdFinal: "",
+  classification: "Loại I"
+};
+
 export const ETHNIC_GROUPS = [
   "Kinh", "Tày", "Thái", "Mường", "Khơ-me", "H'Mông", "Nùng", "Hoa", "Dao", "Gia-rai", "Ê-đê", "Ba-na", "Xơ-đăng", "Chăm", "Cơ-ho", "Khác"
 ];
@@ -102,6 +109,17 @@ export const SAMPLE_PATIENT_DATABASE: FormHealthRecord[] = [
     chuKyKinh: "",
     ngayKinhGanNhat: "",
     benhPhuKhoa: "",
+    tuanHoan: { normal: true, icdPreliminary: "", icdFinal: "I10", classification: "Loại I" },
+    hoHap: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    tieuHoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    thanTietNieu: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    noiTiet: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    coXuongKhop: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    thanKinh: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    tamThan: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    ngoaiKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    daLieu: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    sanKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     soLuongHC: "4.85",
     huyetSacTo: "14.2",
     hematocrit: "43.5",
@@ -182,6 +200,17 @@ export const SAMPLE_PATIENT_DATABASE: FormHealthRecord[] = [
     chuKyKinh: "28 ngày",
     ngayKinhGanNhat: "2026-07-10",
     benhPhuKhoa: "Bình thường",
+    tuanHoan: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    hoHap: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    tieuHoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    thanTietNieu: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    noiTiet: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    coXuongKhop: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    thanKinh: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    tamThan: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    ngoaiKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    daLieu: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
+    sanKhoa: { normal: true, icdPreliminary: "", icdFinal: "", classification: "Loại I" },
     soLuongHC: "4.20",
     huyetSacTo: "12.8",
     hematocrit: "38.2",

@@ -3,6 +3,7 @@ import './App.css';
 import type { FormHealthRecord } from './types';
 import {
   DEFAULT_PERSONAL_HISTORY_ROWS,
+  DEFAULT_SPECIALTY_EXAM,
   ETHNIC_GROUPS,
   ADMINISTRATIVE_DIVISIONS,
   ICD_POPULAR_TAGS,
@@ -59,6 +60,18 @@ const INITIAL_FORM_STATE: FormHealthRecord = {
   ngayKinhGanNhat: "",
   benhPhuKhoa: "",
 
+  tuanHoan: DEFAULT_SPECIALTY_EXAM,
+  hoHap: DEFAULT_SPECIALTY_EXAM,
+  tieuHoa: DEFAULT_SPECIALTY_EXAM,
+  thanTietNieu: DEFAULT_SPECIALTY_EXAM,
+  noiTiet: DEFAULT_SPECIALTY_EXAM,
+  coXuongKhop: DEFAULT_SPECIALTY_EXAM,
+  thanKinh: DEFAULT_SPECIALTY_EXAM,
+  tamThan: DEFAULT_SPECIALTY_EXAM,
+  ngoaiKhoa: DEFAULT_SPECIALTY_EXAM,
+  daLieu: DEFAULT_SPECIALTY_EXAM,
+  sanKhoa: DEFAULT_SPECIALTY_EXAM,
+
   soLuongHC: "",
   huyetSacTo: "",
   hematocrit: "",
@@ -105,6 +118,75 @@ const INITIAL_FORM_STATE: FormHealthRecord = {
   ketLuanBacSi: "",
   tenBacSi: "BS. CKI NGUYỄN VĂN AN"
 };
+
+interface SpecialtyExamBlockProps {
+  title: string;
+  icon?: React.ReactNode;
+  data: any;
+  onChange: (updated: any) => void;
+}
+
+const SpecialtyExamBlock: React.FC<SpecialtyExamBlockProps> = ({ title, icon, data, onChange }) => (
+  <div style={{ border: '1px solid #e0e7f3', borderRadius: '6px', padding: '12px 14px', marginBottom: '12px', background: '#ffffff' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+      {icon && <span style={{ color: '#1e65b9' }}>{icon}</span>}
+      <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#1b365d' }}>{title}</span>
+    </div>
+
+    <div className="syt-grid">
+      <div className="syt-field col-3" style={{ justifyContent: 'center' }}>
+        <label className="syt-checkbox-item" style={{ margin: 0, padding: '6px 10px' }}>
+          <input 
+            type="checkbox" 
+            checked={data?.normal ?? true} 
+            onChange={e => onChange({ ...data, normal: e.target.checked })} 
+          />
+          <span style={{ fontWeight: 600, fontSize: '12px' }}>Chưa phát hiện bất thường</span>
+        </label>
+      </div>
+
+      <div className="syt-field col-3">
+        <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán sơ bộ (ICD)</label>
+        <input 
+          type="text" 
+          className="syt-input" 
+          style={{ padding: '4px 8px', fontSize: '12px' }}
+          placeholder="ghi rõ theo mã ICD..." 
+          value={data?.icdPreliminary || ''}
+          onChange={e => onChange({ ...data, icdPreliminary: e.target.value })}
+        />
+      </div>
+
+      <div className="syt-field col-3">
+        <label className="syt-label" style={{ fontSize: '12px' }}>Chẩn đoán xác định (ICD)</label>
+        <input 
+          type="text" 
+          className="syt-input" 
+          style={{ padding: '4px 8px', fontSize: '12px' }}
+          placeholder="ghi rõ theo mã ICD..." 
+          value={data?.icdFinal || ''}
+          onChange={e => onChange({ ...data, icdFinal: e.target.value })}
+        />
+      </div>
+
+      <div className="syt-field col-3">
+        <label className="syt-label" style={{ fontSize: '12px' }}>Phân loại <span className="syt-required-star">*</span></label>
+        <select 
+          className="syt-input" 
+          style={{ padding: '4px 8px', fontSize: '12px', fontWeight: 600 }}
+          value={data?.classification || 'Loại I'}
+          onChange={e => onChange({ ...data, classification: e.target.value })}
+        >
+          <option value="Loại I">Loại I</option>
+          <option value="Loại II">Loại II</option>
+          <option value="Loại III">Loại III</option>
+          <option value="Loại IV">Loại IV</option>
+          <option value="Loại V">Loại V</option>
+        </select>
+      </div>
+    </div>
+  </div>
+);
 
 export const App: React.FC = () => {
   const [formData, setFormData] = useState<FormHealthRecord>(INITIAL_FORM_STATE);
@@ -976,6 +1058,102 @@ export const App: React.FC = () => {
                   onChange={e => handleChange('huyetAp', e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* KHÁM PHÂN LOẠI CHUYÊN KHOA LÂM SÀNG (FROM SYT DOM SNIPPET 5) */}
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ color: '#3399ff', fontWeight: 700, fontSize: '16px', textTransform: 'uppercase', marginBottom: '14px', borderBottom: '1px solid #e0e7f3', paddingBottom: '6px' }}>
+                1. NỘI KHOA (Nội khoa tổng quát)
+              </div>
+
+              <SpecialtyExamBlock 
+                title="Tuần hoàn" 
+                icon={<IconHeartPulse />}
+                data={formData.tuanHoan}
+                onChange={val => handleChange('tuanHoan', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Hô hấp" 
+                icon={<IconStethoscope />}
+                data={formData.hoHap}
+                onChange={val => handleChange('hoHap', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Tiêu hóa" 
+                icon={<IconBriefcase />}
+                data={formData.tieuHoa}
+                onChange={val => handleChange('tieuHoa', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Thận - Tiết niệu" 
+                icon={<IconFileText />}
+                data={formData.thanTietNieu}
+                onChange={val => handleChange('thanTietNieu', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Nội tiết" 
+                icon={<IconUser />}
+                data={formData.noiTiet}
+                onChange={val => handleChange('noiTiet', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Cơ - xương - khớp" 
+                icon={<IconHeartPulse />}
+                data={formData.coXuongKhop}
+                onChange={val => handleChange('coXuongKhop', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Thần kinh" 
+                icon={<IconUser />}
+                data={formData.thanKinh}
+                onChange={val => handleChange('thanKinh', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Tâm thần" 
+                icon={<IconUser />}
+                data={formData.tamThan}
+                onChange={val => handleChange('tamThan', val)}
+              />
+
+              <div style={{ color: '#3399ff', fontWeight: 700, fontSize: '16px', textTransform: 'uppercase', margin: '24px 0 14px 0', borderBottom: '1px solid #e0e7f3', paddingBottom: '6px' }}>
+                2. NGOẠI KHOA & DA LIỄU
+              </div>
+
+              <SpecialtyExamBlock 
+                title="Ngoại khoa" 
+                icon={<IconStethoscope />}
+                data={formData.ngoaiKhoa}
+                onChange={val => handleChange('ngoaiKhoa', val)}
+              />
+
+              <SpecialtyExamBlock 
+                title="Da liễu" 
+                icon={<IconUser />}
+                data={formData.daLieu}
+                onChange={val => handleChange('daLieu', val)}
+              />
+
+              {(formData.isFemale || formData.gioiTinh === 'Nữ') && (
+                <>
+                  <div style={{ color: '#3399ff', fontWeight: 700, fontSize: '16px', textTransform: 'uppercase', margin: '24px 0 14px 0', borderBottom: '1px solid #e0e7f3', paddingBottom: '6px' }}>
+                    4. SẢN PHỤ KHOA
+                  </div>
+
+                  <SpecialtyExamBlock 
+                    title="Sản khoa" 
+                    icon={<IconUser />}
+                    data={formData.sanKhoa}
+                    onChange={val => handleChange('sanKhoa', val)}
+                  />
+                </>
+              )}
             </div>
           </div>
 

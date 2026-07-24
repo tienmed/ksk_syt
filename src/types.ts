@@ -13,6 +13,13 @@ export interface FamilyHistoryItem {
   checked: boolean;
 }
 
+export interface ClinicalSpecialtyExam {
+  normal: boolean;
+  icdPreliminary: string;
+  icdFinal: string;
+  classification: string; // 'Loại I' | 'Loại II' | 'Loại III' | 'Loại IV' | 'Loại V'
+}
+
 export interface FormHealthRecord {
   id?: string;
   createdAt?: string;
@@ -64,6 +71,19 @@ export interface FormHealthRecord {
   chuKyKinh: string;
   ngayKinhGanNhat: string;
   benhPhuKhoa: string;
+
+  // Clinical Specialty Examinations (From SYT DOM Snippet 5)
+  tuanHoan: ClinicalSpecialtyExam;
+  hoHap: ClinicalSpecialtyExam;
+  tieuHoa: ClinicalSpecialtyExam;
+  thanTietNieu: ClinicalSpecialtyExam;
+  noiTiet: ClinicalSpecialtyExam;
+  coXuongKhop: ClinicalSpecialtyExam;
+  thanKinh: ClinicalSpecialtyExam;
+  tamThan: ClinicalSpecialtyExam;
+  ngoaiKhoa: ClinicalSpecialtyExam;
+  daLieu: ClinicalSpecialtyExam;
+  sanKhoa: ClinicalSpecialtyExam;
 
   // Paraclinical / Lab Tests - Blood Count
   soLuongHC: string; // M/µL

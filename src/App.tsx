@@ -1766,6 +1766,7 @@ export const App: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
       {/* MODAL: GOOGLE OAUTH AUTHENTICATION */}
       {showGoogleModal && (
         <div className="syt-modal-overlay">
@@ -1798,8 +1799,8 @@ export const App: React.FC = () => {
                   cursor: 'pointer', 
                   marginBottom: '12px',
                   display: 'flex',
-                  align-items: 'center',
-                  justify-content: 'space-between',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)',
                   transition: 'transform 0.15s'
                 }}
@@ -1842,8 +1843,8 @@ export const App: React.FC = () => {
                   cursor: 'pointer', 
                   marginBottom: '16px',
                   display: 'flex',
-                  align-items: 'center',
-                  justify-content: 'space-between'
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
                 }}
                 onClick={() => handleLoginSuccess({
                   id: 'google-doctor-002',

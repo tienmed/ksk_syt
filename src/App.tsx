@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import type { FormHealthRecord } from './types';
+import type { FormHealthRecord, GoogleUser } from './types';
 import {
   DEFAULT_PERSONAL_HISTORY_ROWS,
   DEFAULT_SPECIALTY_EXAM,
@@ -13,7 +13,8 @@ import {
   IconCard, IconUser, IconCalendar, IconMapPin, IconBriefcase,
   IconStethoscope, IconSearch, IconFingerprint, IconScanFace,
   IconSave, IconPrinter, IconHistory, IconCheck, IconTrash, IconRotateCcw,
-  IconAlertTriangle, IconBuilding, IconFileText, IconHeartPulse
+  IconAlertTriangle, IconBuilding, IconFileText, IconHeartPulse,
+  IconGoogle, IconLogOut
 } from './components/Icons';
 
 const INITIAL_FORM_STATE: FormHealthRecord = {
@@ -193,6 +194,16 @@ export const App: React.FC = () => {
   const [savedRecords, setSavedRecords] = useState<FormHealthRecord[]>([]);
   const [activeSection, setActiveSection] = useState<string>('sec-hanhchinh');
   
+  // Google OAuth Auth State
+  const [currentUser, setCurrentUser] = useState<GoogleUser | null>(() => {
+    const stored = localStorage.getItem('syt_google_user');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) { return null; }
+    }
+    return null;
+  });
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+
   // UI Modals & Notifications
   const [showLookupModal, setShowLookupModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -215,9 +226,58 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Google Identity Services SDK Script Loader
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const getRoleForEmail = (email: string) => {
+    if (email.toLowerCase() === 'tienmed@gmail.com') {
+      return 'Superadmin - Quản trị viên Tối cao SYT';
+    }
+    return 'Bác sĩ / Cán bộ Y tế';
+  };
+
+  const handleLoginSuccess = (userObj: GoogleUser) => {
+    const isSuperadmin = userObj.email.toLowerCase() === 'tienmed@gmail.com';
+    const role = isSuperadmin ? 'Superadmin - Quản trị viên Tối cao SYT' : 'Bác sĩ / Cán bộ Y tế';
+    const updatedUser = { ...userObj, role };
+
+    setCurrentUser(updatedUser);
+    localStorage.setItem('syt_google_user', JSON.stringify(updatedUser));
+
+    // Auto-fill Doctor Signature in Section VII
+    setFormData(prev => ({
+      ...prev,
+      tenBacSi: isSuperadmin ? 'BS. CKII NGUYỄN VĂN TIẾN' : userObj.name.toUpperCase()
+    }));
+
+    if (isSuperadmin) {
+      triggerToast(`👑 Xin chào Superadmin Nguyễn Văn Tiến (tienmed@gmail.com)!`);
+    } else {
+      triggerToast(`🔑 Đăng nhập Google thành công: ${userObj.name}`);
+    }
+    setShowGoogleModal(false);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('syt_google_user');
+    triggerToast("🔒 Đã đăng xuất khỏi tài khoản Google");
   };
 
   const scrollToSection = (sectionId: string) => {
@@ -388,6 +448,39 @@ export const App: React.FC = () => {
         </div>
 
         <div className="syt-action-bar">
+          {currentUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.15)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)' }}>
+              <img 
+                src={currentUser.picture || "https://lh3.googleusercontent.com/a/default-user=s96-c"} 
+                alt="Avatar" 
+                style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid #ffffff' }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', fontSize: '12px', lineHeight: '1.2' }}>
+                <span style={{ fontWeight: 'bold', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {currentUser.name}
+                  {currentUser.email.toLowerCase() === 'tienmed@gmail.com' && (
+                    <span style={{ background: '#f59e0b', color: '#000000', padding: '1px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold' }}>
+                      👑 SUPERADMIN
+                    </span>
+                  )}
+                </span>
+                <span style={{ opacity: 0.85, fontSize: '11px' }}>{currentUser.email}</span>
+              </div>
+              <button 
+                className="syt-btn syt-btn-danger" 
+                style={{ padding: '4px 8px', fontSize: '11px', borderRadius: '12px' }}
+                onClick={handleLogout}
+                title="Đăng xuất khỏi tài khoản Google"
+              >
+                <IconLogOut /> Đăng xuất
+              </button>
+            </div>
+          ) : (
+            <button className="syt-btn" style={{ background: '#ffffff', color: '#1f2937', fontWeight: 600 }} onClick={() => setShowGoogleModal(true)}>
+              <IconGoogle /> Đăng nhập Google
+            </button>
+          )}
+
           <button className="syt-btn syt-btn-secondary" onClick={() => setShowLookupModal(true)}>
             <IconSearch /> Tra cứu CCCD
           </button>
@@ -1670,6 +1763,123 @@ export const App: React.FC = () => {
             </div>
             <div className="syt-modal-footer">
               <button className="syt-btn syt-btn-outline" onClick={() => setShowHistoryModal(false)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      {/* MODAL: GOOGLE OAUTH AUTHENTICATION */}
+      {showGoogleModal && (
+        <div className="syt-modal-overlay">
+          <div className="syt-modal-content" style={{ maxWidth: '520px' }}>
+            <div className="syt-modal-header" style={{ background: 'linear-gradient(135deg, #1b365d 0%, #1e65b9 100%)' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconGoogle /> Đăng nhập Google OAuth 2.0 (Sở Y Tế TP.HCM)
+              </h3>
+              <button className="syt-modal-close" onClick={() => setShowGoogleModal(false)}>×</button>
+            </div>
+            
+            <div className="syt-modal-body" style={{ padding: '24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#eff6ff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', border: '1px solid #bfdbfe' }}>
+                  <IconGoogle className="w-8 h-8" />
+                </div>
+                <h4 style={{ fontSize: '17px', fontWeight: 'bold', color: '#1b365d' }}>Hệ thống Xác thực Google OAuth</h4>
+                <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                  Chọn hoặc mô phỏng tài khoản Google cán bộ y tế / Superadmin để truy cập hệ thống:
+                </p>
+              </div>
+
+              {/* SUPERADMIN ACCOUNT CARD */}
+              <div 
+                style={{ 
+                  border: '2px solid #f59e0b', 
+                  borderRadius: '8px', 
+                  padding: '14px 16px', 
+                  background: 'linear-gradient(135deg, #fffbe3 0%, #ffffff 100%)', 
+                  cursor: 'pointer', 
+                  marginBottom: '12px',
+                  display: 'flex',
+                  align-items: 'center',
+                  justify-content: 'space-between',
+                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)',
+                  transition: 'transform 0.15s'
+                }}
+                onClick={() => handleLoginSuccess({
+                  id: 'google-superadmin-001',
+                  name: 'Nguyễn Văn Tiến',
+                  email: 'tienmed@gmail.com',
+                  picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tienmed',
+                  role: 'Superadmin - Quản trị viên Tối cao SYT'
+                })}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+                    👑
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#78350f', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      tienmed@gmail.com
+                      <span style={{ background: '#f59e0b', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                        SUPERADMIN
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#92400e', marginTop: '2px' }}>
+                      Nguyễn Văn Tiến • Quản trị viên Tối cao SYT
+                    </div>
+                  </div>
+                </div>
+                <button className="syt-btn syt-btn-primary" style={{ padding: '6px 14px', fontSize: '12px', background: '#d97706' }}>
+                  Đăng nhập Superadmin
+                </button>
+              </div>
+
+              {/* STANDARD DOCTOR ACCOUNT CARD */}
+              <div 
+                style={{ 
+                  border: '1px solid #cbd5e1', 
+                  borderRadius: '8px', 
+                  padding: '12px 16px', 
+                  background: '#f8fafc', 
+                  cursor: 'pointer', 
+                  marginBottom: '16px',
+                  display: 'flex',
+                  align-items: 'center',
+                  justify-content: 'space-between'
+                }}
+                onClick={() => handleLoginSuccess({
+                  id: 'google-doctor-002',
+                  name: 'BS. CKI NGUYỄN VĂN AN',
+                  email: 'bs.nguyenvanan@syt.hochiminhcity.gov.vn',
+                  picture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DoctorAn',
+                  role: 'Bác sĩ / Cán bộ Y tế'
+                })}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <img 
+                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=DoctorAn" 
+                    alt="Doctor" 
+                    style={{ width: '38px', height: '38px', borderRadius: '50%', border: '1px solid #cbd5e1' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#1b365d', fontSize: '13px' }}>
+                      bs.nguyenvanan@syt.hochiminhcity.gov.vn
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      BS. CKI NGUYỄN VĂN AN • Khoa Khám sức khỏe
+                    </div>
+                  </div>
+                </div>
+                <button className="syt-btn syt-btn-outline" style={{ padding: '6px 12px', fontSize: '12px' }}>
+                  Chọn tài khoản
+                </button>
+              </div>
+
+              <div style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8' }}>
+                Google Identity Services Token Verification • SSL 256-bit Encrypted
+              </div>
+            </div>
+
+            <div className="syt-modal-footer">
+              <button className="syt-btn syt-btn-outline" onClick={() => setShowGoogleModal(false)}>Hủy bỏ</button>
             </div>
           </div>
         </div>

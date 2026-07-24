@@ -7,6 +7,15 @@ export interface PersonalHistoryRow {
   doctorAssessment?: string;
 }
 
+export interface GoogleUser {
+  id: string;
+  name: string;
+  email: string;
+  picture: string;
+  role: string;
+  accessToken?: string;
+}
+
 export interface FamilyHistoryItem {
   id: string;
   name: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { FormHealthRecord } from './types';
+import type { FormHealthRecord } from './types';
 import {
   DEFAULT_PERSONAL_HISTORY_ROWS,
   ETHNIC_GROUPS,

@@ -1,4 +1,4 @@
-import { FormHealthRecord, PersonalHistoryRow } from '../types';
+import type { FormHealthRecord, PersonalHistoryRow } from '../types';
 
 export const INITIAL_PERSONAL_HISTORY_DISEASES: string[] = [
   "Bệnh truyền nhiễm (Cúm, Sởi, Quai bị, Thủy đậu, COVID-19, v.v.)",
